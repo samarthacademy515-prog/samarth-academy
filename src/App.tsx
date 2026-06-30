@@ -10,6 +10,7 @@ import ERPManagement from "./components/ERPManagement";
 import LMSViewer from "./components/LMSViewer";
 import { Student, FeeLog, Assignment } from "./types";
 import { ACADEMY_INFO, COURSES, TEACHERS } from "./data";
+import logoImage from "./assets/images/academy_logo_1782839442092.jpg";
 
 export default function App() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -143,10 +144,18 @@ export default function App() {
                       </div>
 
                       {/* Visual Badge */}
-                      <div className="bg-slate-950/70 p-6 rounded-2xl border border-slate-800 flex flex-col items-center justify-center text-center gap-1 shrink-0 w-44 shadow-lg">
-                        <GraduationCap className="w-10 h-10 text-amber-500" />
-                        <span className="text-white font-black text-xl tracking-tight">Active</span>
-                        <span className="text-slate-500 text-[10px] uppercase font-bold tracking-wide">Batch 2026</span>
+                      <div className="bg-slate-950/70 p-4 rounded-2xl border border-slate-800 flex flex-col items-center justify-center text-center gap-2 shrink-0 w-44 shadow-lg group relative overflow-hidden">
+                        <div className="absolute -inset-0.5 bg-gradient-to-tr from-amber-500/20 to-red-600/20 rounded-2xl blur-sm opacity-50 group-hover:opacity-100 transition duration-300"></div>
+                        <img 
+                          src={logoImage} 
+                          alt="Samarth Academy Logo" 
+                          className="relative w-20 h-20 object-cover rounded-xl shadow-md border border-slate-800"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="relative z-10 text-center">
+                          <span className="text-white font-black text-sm tracking-tight block">Batch 2026</span>
+                          <span className="text-amber-500 text-[9px] uppercase font-bold tracking-wider">Active Status</span>
+                        </div>
                       </div>
                     </div>
 

@@ -1,5 +1,6 @@
 import { GraduationCap, Phone, ShieldCheck, User, Users, BookOpen } from "lucide-react";
 import { ACADEMY_INFO } from "../data";
+import logoImage from "../assets/images/academy_logo_1782839442092.jpg";
 
 interface AppHeaderProps {
   currentRole: string;
@@ -31,9 +32,17 @@ export default function AppHeader({ currentRole, onChangeRole }: AppHeaderProps)
       {/* Main Header Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
         {/* Brand/Identity */}
-        <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-tr from-amber-500 to-red-600 p-2.5 rounded-xl shadow-lg border border-amber-400">
-            <GraduationCap className="w-8 h-8 text-slate-950" />
+        <div className="flex items-center gap-4">
+          <div className="relative group shrink-0">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-red-600 rounded-2xl blur-md opacity-75 group-hover:opacity-100 transition duration-300"></div>
+            <div className="relative bg-slate-950 rounded-2xl p-1 border border-slate-800 shadow-xl overflow-hidden flex items-center justify-center">
+              <img 
+                src={logoImage} 
+                alt="Samarth Academy Logo" 
+                className="w-14 h-14 object-cover rounded-xl"
+                referrerPolicy="no-referrer"
+              />
+            </div>
           </div>
           <div>
             <div className="flex items-baseline gap-2">
