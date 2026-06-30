@@ -1,0 +1,6 @@
+{
+  "name": "Samarth Academy ERP",
+  "description": "Enterprise-grade Educational ERP, Learning Management System (LMS), and Coaching Management Platform with AI Doubt Solver for Samarth Academy, Parbhani.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
