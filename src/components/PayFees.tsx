@@ -4,6 +4,7 @@ import { Landmark, CreditCard, Coins, CheckCircle, ArrowRight, Printer, RefreshC
 import { Student } from "../types";
 import { useLanguage } from "../context/LanguageContext";
 import payFeesQrImage from "../assets/images/pay_fees_qr_1782914359262.jpg";
+import { API } from "../config";
 
 interface PayFeesProps {
   students: Student[];
@@ -108,7 +109,7 @@ export default function PayFees({ students, currentUser, onPaymentSuccess }: Pay
         receivedBy: currentUser.role === "admin" ? currentUser.name : receivedBy
       };
 
-      const response = await fetch("/api/fees/pay", {
+      const response = await fetch(`${API}/api/fees/pay`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
