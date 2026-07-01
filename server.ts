@@ -2,7 +2,6 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import dotenv from "dotenv";
-import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 
 dotenv.config();
@@ -570,13 +569,19 @@ Standard/Exam Level: ${level || "Competitive / School"}
 // --- VITE DEV / PRODUCTION MIDDLEWARE ---
 
 async function startServer() {
-  if (process.env.NODE_ENV !== "production") {
+  const isProd = process.env.NODE_ENV === "production";
+  const distExists = fs.existsSync(path.join(process.cwd(), "dist"));
+
+  if (!isProd || !distExists) {
+    console.log("Starting server in DEVELOPMENT/VITE mode...");
+    const { createServer: createViteServer } = await (eval('import("vite")') as Promise<any>);
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
+    console.log("Starting server in PRODUCTION static mode...");
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
