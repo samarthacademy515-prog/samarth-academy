@@ -60,7 +60,9 @@ export default function App() {
   const fetchState = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/db");
+      const res = await fetch(
+    `${import.meta.env.VITE_API_URL}/api/db`
+);
       if (res.ok) {
         const data = await res.json();
         setStudents(data.students || []);
