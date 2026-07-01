@@ -63,12 +63,12 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
       const payload: any = { role: selectedRole };
       if (selectedRole === "student" || selectedRole === "parent") {
         if (!loginCode.trim()) {
-          throw new Error(selectedRole === "student" ? "कृपया ७-अंकी लॉगिन कोड टाका." : "कृपया ७-अंकी कोड किंवा नंबर टाका.");
+          throw new Error(selectedRole === "student" ? t("auth.enter_code_student") : t("auth.enter_code_parent"));
         }
         payload.loginCode = loginCode.trim();
       } else {
         if (!passcode.trim()) {
-          throw new Error("कृपया पासवर्ड / पिन टाका.");
+          throw new Error(t("auth.enter_pass"));
         }
         payload.passcode = passcode.trim();
       }
@@ -85,14 +85,14 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
         data = await response.json();
       } else {
         const text = await response.text();
-        throw new Error("सर्व्हरवरून अवैध प्रतिसाद मिळाला. (Server returned invalid response. Please try again.)");
+        throw new Error(t("auth.invalid_server_resp"));
       }
 
       if (!response.ok) {
-        throw new Error(data.error || "लॉगिन अयशस्वी झाले.");
+        throw new Error(data.error || t("auth.login_failed"));
       }
 
-      setSuccessMsg(`यशस्वी लॉगिन! स्वागत आहे, ${data.user.name}`);
+      setSuccessMsg(`${t("auth.login_success_welcome")}${data.user.name}`);
       setTimeout(() => {
         onLoginSuccess(data.user);
       }, 1200);
@@ -107,7 +107,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
-      setErrorMsg("कृपया ईमेल आणि पासवर्ड टाका.");
+      setErrorMsg(t("auth.enter_email_pass"));
       return;
     }
     setLoading(true);
@@ -129,10 +129,10 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
       if (contentType && contentType.includes("application/json")) {
         data = await response.json();
       } else {
-        throw new Error("सर्व्हरकडून अवैध प्रतिसाद मिळाला. (Server returned invalid response. Please try again.)");
+        throw new Error(t("auth.invalid_server_resp"));
       }
 
-      setSuccessMsg("ईमेलद्वारे नवीन खाते तयार केले गेले!");
+      setSuccessMsg(t("auth.email_created"));
       setTimeout(() => {
         onLoginSuccess({
           role: "guest",
@@ -282,7 +282,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
               activeTab === "existing" ? "text-amber-400 bg-slate-900/40" : "text-slate-500 hover:text-slate-300"
             }`}
           >
-            १. जुने युझर (Existing User)
+            {t("auth.existing_tab")}
             {activeTab === "existing" && (
               <motion.div layoutId="activeTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500" />
             )}
@@ -293,7 +293,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
               activeTab === "new" ? "text-amber-400 bg-slate-900/40" : "text-slate-500 hover:text-slate-300"
             }`}
           >
-            २. नवीन युझर (New User)
+            {t("auth.new_tab")}
             {activeTab === "new" && (
               <motion.div layoutId="activeTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500" />
             )}
@@ -310,20 +310,21 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                 exit={{ opacity: 0, x: 10 }}
                 className="space-y-5"
               >
-                {/* Role Switcher Pills */}
+                 {/* Role Switcher Pills */}
                 <div className="space-y-1.5">
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                    आपली भूमिका निवडा (Choose Your Role)
+                    {t("auth.choose_role")}
                   </label>
                   <div className="grid grid-cols-4 gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800/80">
                     {[
-                      { id: "student", label: "Student", icon: GraduationCap },
-                      { id: "parent", label: "Parent", icon: Users },
-                      { id: "teacher", label: "Teacher", icon: BookOpen },
-                      { id: "admin", label: "Director", icon: ShieldCheck }
+                      { id: "student", icon: GraduationCap },
+                      { id: "parent", icon: Users },
+                      { id: "teacher", icon: BookOpen },
+                      { id: "admin", icon: ShieldCheck }
                     ].map((roleItem) => {
                       const isSel = selectedRole === roleItem.id;
                       const Icon = roleItem.icon;
+                      const label = roleItem.id === "admin" ? t("role.admin") : t("role." + roleItem.id);
                       return (
                         <button
                           key={roleItem.id}
@@ -336,7 +337,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                           }`}
                         >
                           <Icon className={`w-4 h-4 ${isSel ? "text-amber-500" : "text-slate-500"}`} />
-                          <span>{roleItem.label}</span>
+                          <span>{label}</span>
                         </button>
                       );
                     })}
@@ -348,9 +349,9 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                   <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3 text-xs text-amber-400 flex gap-2">
                     <Info className="w-4 h-4 shrink-0 text-amber-500 mt-0.5 animate-bounce" />
                     <div>
-                      <strong className="font-bold block">७-अंकी सुरक्षित लॉगिन कोड</strong>
+                      <strong className="font-bold block">{t("auth.login_code_title")}</strong>
                       <p className="text-slate-300 text-[11px] mt-0.5 leading-relaxed">
-                        नवीन प्रवेश घेताना आम्ही विद्यार्थ्यांच्या मोबाईलवर ७-अंकी लॉगिन कोड थेट WhatsApp द्वारे पाठवला आहे. लॉगिन करण्यासाठी तो कोड येथे टाकावा.
+                        {t("auth.login_code_desc")}
                       </p>
                     </div>
                   </div>
@@ -363,15 +364,15 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                       <div className="flex justify-between items-center mb-1.5">
                         <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
                           {selectedRole === "student" 
-                            ? "विद्यार्थी ७-अंकी लॉगिन कोड (Student Login Code) *" 
-                            : "विद्यार्थी ७-अंकी कोड किंवा पालकांचा फोन नंबर *"}
+                            ? t("auth.student_code_label") 
+                            : t("auth.parent_code_label")}
                         </label>
                         <button
                           type="button"
                           onClick={() => { setShowCodeFinder(!showCodeFinder); setErrorMsg(null); }}
                           className="text-[10px] text-amber-500 hover:underline font-black uppercase flex items-center gap-1 cursor-pointer"
                         >
-                          <Search className="w-3 h-3" /> कोड शोधा (Find Code)
+                          <Search className="w-3 h-3" /> {t("auth.find_code")}
                         </button>
                       </div>
 
@@ -379,7 +380,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                         type="text"
                         required
                         maxLength={selectedRole === "student" ? 7 : 10}
-                        placeholder={selectedRole === "student" ? "उदा. 8420511" : "उदा. ७-अंकी कोड किंवा १०-अंकी फोन नंबर"}
+                        placeholder={selectedRole === "student" ? t("auth.student_placeholder") : t("auth.parent_placeholder")}
                         value={loginCode}
                         onChange={(e) => setLoginCode(e.target.value.replace(/[^0-9]/g, ""))}
                         className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-700 font-mono text-center tracking-widest focus:outline-none focus:border-amber-500 transition-colors"
@@ -388,7 +389,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                   ) : (
                     <div>
                       <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                        {selectedRole === "admin" ? "Director / Admin Passcode *" : "Teacher Security PIN *"}
+                        {selectedRole === "admin" ? t("auth.admin_pass_label") : t("auth.teacher_pass_label")}
                       </label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-3 w-4 h-4 text-slate-600" />
@@ -414,7 +415,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                       <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
                     ) : (
                       <>
-                        <Unlock className="w-4 h-4" /> प्रवेश करा (Secure Login) <ArrowRight className="w-4 h-4" />
+                        <Unlock className="w-4 h-4" /> {t("auth.login_btn")} <ArrowRight className="w-4 h-4" />
                       </>
                     )}
                   </button>
@@ -431,17 +432,17 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                     >
                       <div className="flex justify-between items-center">
                         <h4 className="font-black text-amber-500 uppercase text-[10px] flex items-center gap-1">
-                          <Search className="w-3.5 h-3.5" /> विद्यार्थी कोड शोधक (Demo Code Finder)
+                          <Search className="w-3.5 h-3.5" /> {t("auth.code_finder_title")}
                         </h4>
                         <button onClick={() => setShowCodeFinder(false)} className="text-slate-400 hover:text-white font-bold">✕</button>
                       </div>
                       <p className="text-[11px] text-slate-400 leading-normal">
-                        डेमोसाठी आपण खाली कोणत्याही विद्यार्थ्याचा १०-अंकी मोबाईल नंबर टाकून (उदा. <span className="font-mono text-white">9511668617</span> किंवा <span className="font-mono text-white">9876543210</span>) त्यांचा लॉगिन कोड तात्काळ शोधू शकता.
+                        {t("auth.code_finder_desc")}
                       </p>
                       <div className="flex gap-2">
                         <input
                           type="text"
-                          placeholder="मोबाईल नंबर किंवा नाव टाका"
+                          placeholder={t("auth.search_placeholder")}
                           value={searchPhone}
                           onChange={(e) => setSearchPhone(e.target.value)}
                           className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500"
@@ -449,18 +450,18 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                         <button
                           onClick={searchStudentCode}
                           disabled={finderLoading}
-                          className="bg-amber-600 hover:bg-amber-500 text-slate-950 font-extrabold px-3 py-1.5 rounded-lg cursor-pointer"
+                          className="bg-amber-600 hover:bg-amber-500 text-slate-950 font-extrabold px-3 py-1.5 rounded-lg cursor-pointer shrink-0"
                         >
-                          शोध घ्या
+                          {t("auth.search_btn")}
                         </button>
                       </div>
                       {foundStudent && (
                         <div className="bg-slate-900 border border-slate-800/80 p-2.5 rounded-xl space-y-1 mt-2 text-[11px]">
-                          <p className="text-emerald-400 font-bold">✨ विद्यार्थी सापडला! (Found!)</p>
-                          <p className="text-white font-semibold">नाव: <span className="text-slate-300">{foundStudent.name}</span></p>
-                          <p className="text-white font-semibold">मोबाईल: <span className="text-slate-300 font-mono">{foundStudent.phone}</span></p>
+                          <p className="text-emerald-400 font-bold">✨ {t("auth.student_found")}</p>
+                          <p className="text-white font-semibold">{t("auth.student_name")} <span className="text-slate-300">{foundStudent.name}</span></p>
+                          <p className="text-white font-semibold">{t("auth.student_phone")} <span className="text-slate-300 font-mono">{foundStudent.phone}</span></p>
                           <p className="text-amber-400 font-black flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 py-1 px-2 rounded-lg mt-1">
-                            🔑 ७-अंकी लॉगिन कोड: <span className="font-mono text-sm tracking-wider underline">{foundStudent.loginCode}</span>
+                            🔑 {t("auth.student_code_display")} <span className="font-mono text-sm tracking-wider underline">{foundStudent.loginCode}</span>
                           </p>
                           <button
                             onClick={() => {
@@ -469,7 +470,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                             }}
                             className="w-full mt-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold py-1 px-2 rounded text-[10px] uppercase cursor-pointer"
                           >
-                            हा कोड ऑटो-फिल करा (Auto-fill this code)
+                            {t("auth.autofill_btn")}
                           </button>
                         </div>
                       )}
@@ -488,10 +489,10 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
               >
                 <div className="text-center space-y-1">
                   <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center justify-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-amber-500" /> नवीन खाते उघडा (New User Portal)
+                    <Sparkles className="w-4 h-4 text-amber-500" /> {t("auth.new_user_title")}
                   </h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    नवीन युझर्ससाठी थेट प्रवेश. आपण खालीलपैकी कोणत्याही पर्यायाद्वारे नोंदणी करून ॲकॅडमी पोर्टल एक्सप्लोर करू शकता:
+                    {t("auth.new_user_desc")}
                   </p>
                 </div>
 
@@ -506,7 +507,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                     <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-900"></span>
                   ) : (
                     <>
-                      <Chrome className="w-4 h-4 text-red-500" /> Sign Up / Login with Google
+                      <Chrome className="w-4 h-4 text-red-500" /> {t("auth.google_btn")}
                     </>
                   )}
                 </button>
@@ -521,7 +522,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                       className="bg-white text-slate-900 rounded-2xl p-4 border border-slate-200 shadow-xl space-y-3"
                     >
                       <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Choose Google Account</span>
+                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("auth.google_chooser")}</span>
                         <button onClick={() => setShowGoogleChooser(false)} className="text-slate-400 hover:text-slate-900 font-bold">✕</button>
                       </div>
                       <div className="space-y-1.5 text-xs">
@@ -547,12 +548,13 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                         </button>
                         <button
                           onClick={() => {
-                            const customEmail = prompt("आपला दुसरा Google ईमेल पत्ता टाका (Enter alternate Gmail):", "student.samarth@gmail.com");
+                            const promptMsg = language === "marathi" ? "आपला दुसरा Google ईमेल पत्ता टाका (Enter alternate Gmail):" : language === "hindi" ? "अपना दूसरा Google ईमेल पता दर्ज करें (Enter alternate Gmail):" : "Enter alternate Google Gmail address:";
+                            const customEmail = prompt(promptMsg, "student.samarth@gmail.com");
                             if (customEmail) selectGoogleAccount(customEmail);
                           }}
                           className="w-full text-center py-2 hover:bg-slate-50 rounded-lg text-amber-600 font-bold text-[11px] border border-dashed border-amber-200"
                         >
-                          + Use Another Account
+                          {t("auth.google_another")}
                         </button>
                       </div>
                     </motion.div>
@@ -562,7 +564,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                 {/* Separator Line */}
                 <div className="relative flex py-1 items-center">
                   <div className="flex-grow border-t border-slate-800"></div>
-                  <span className="flex-shrink mx-4 text-slate-500 text-[10px] uppercase font-black tracking-wider">किंवा ईमेलने खाते उघडा</span>
+                  <span className="flex-shrink mx-4 text-slate-500 text-[10px] uppercase font-black tracking-wider">{t("auth.email_or")}</span>
                   <div className="flex-grow border-t border-slate-800"></div>
                 </div>
 
@@ -570,7 +572,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                 <form onSubmit={handleEmailSignUp} className="space-y-3.5">
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-                      ईमेल पत्ता (Email Address) *
+                      {t("auth.email_label")} *
                     </label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 w-4 h-4 text-slate-600" />
@@ -587,7 +589,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-                      पासवर्ड (Create Password) *
+                      {t("auth.pass_label")} *
                     </label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 w-4 h-4 text-slate-600" />
@@ -611,7 +613,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                       <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
                     ) : (
                       <>
-                        <Mail className="w-4 h-4 text-amber-500" /> Register with Email
+                        <Mail className="w-4 h-4 text-amber-500" /> {t("auth.register_btn")}
                       </>
                     )}
                   </button>
@@ -626,10 +628,10 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
         <div className="p-4 bg-slate-950/80 border-t border-slate-850 text-center text-[10px] text-slate-400 space-y-1">
           <p className="flex items-center justify-center gap-1">
             <HelpCircle className="w-3.5 h-3.5 text-amber-500" /> 
-            प्रवेश हवा आहे? आजच संपर्क करा: <strong className="text-slate-200">9511668617</strong>
+            {t("auth.help_title")} <strong className="text-slate-200">9511668617</strong>
           </p>
           <p className="text-slate-500">
-            © {new Date().getFullYear()} समर्थ अकॅडमी, परभणी. ज्ञान हेच सामर्थ्य! All Rights Reserved.
+            {t("auth.footer_rights")}
           </p>
         </div>
       </div>

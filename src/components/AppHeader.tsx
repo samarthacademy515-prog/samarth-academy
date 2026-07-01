@@ -12,7 +12,7 @@ interface AppHeaderProps {
 }
 
 export default function AppHeader({ currentRole, onChangeRole, onMenuClick, currentUser, onLogout }: AppHeaderProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   
   const roles = [
     { id: "admin", label: t("role.admin"), icon: ShieldCheck, color: "bg-red-500 text-white" },
@@ -27,11 +27,11 @@ export default function AppHeader({ currentRole, onChangeRole, onMenuClick, curr
       <div className="bg-gradient-to-r from-red-700 via-amber-600 to-red-700 text-white text-xs py-1 px-4 text-center font-medium flex justify-between items-center max-w-7xl mx-auto md:px-6">
         <span className="flex items-center gap-1.5">
           <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          Sinchan Nagar, Parbhani, Maharashtra — Admissions Open (2026)
+          {t("header.admissions_open")}
         </span>
         <span className="flex items-center gap-1.5">
           <Phone className="w-3.5 h-3.5" />
-          संपर्क: <a href="tel:9511668617" className="hover:underline font-bold">9511668617</a>
+          {t("header.contact")} <a href="tel:9511668617" className="hover:underline font-bold">9511668617</a>
         </span>
       </div>
 
@@ -68,7 +68,7 @@ export default function AppHeader({ currentRole, onChangeRole, onMenuClick, curr
               <span className="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded font-mono font-bold">Parbhani</span>
             </div>
             <p className="text-amber-400 text-xs font-semibold tracking-wider font-sans mt-0.5">
-              {t("nav.tagline")} • Sinchan Nagar Parbhani
+              {t("nav.tagline")} • {language === "marathi" ? "सिंचन नगर परभणी" : language === "hindi" ? "सिंचन नगर परभणी" : "Sinchan Nagar Parbhani"}
             </p>
           </div>
         </div>
@@ -100,7 +100,7 @@ export default function AppHeader({ currentRole, onChangeRole, onMenuClick, curr
                 id="btn-header-logout"
               >
                 <LogOut className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden sm:inline">बाहेर पडा (Logout)</span>
+                <span className="hidden sm:inline">{t("header.logout")}</span>
               </button>
             )}
           </div>

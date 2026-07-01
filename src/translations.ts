@@ -33,6 +33,12 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     marathi: "प्रगती ट्रॅकर",
     hindi: "प्रगति ट्रैकर"
   },
+  "nav.fees": {
+    english: "Pay Fees",
+    hinglish: "Pay Fees On-line",
+    marathi: "फी भरणे केंद्र",
+    hindi: "फीस भुगतान"
+  },
   "nav.erp": {
     english: "ERP Panel",
     hinglish: "Director ERP Panel",
@@ -62,12 +68,6 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     hinglish: "AI Doubt Solver",
     marathi: "एआय शंका निवारण",
     hindi: "एआई शंका समाधान"
-  },
-  "nav.fees": {
-    english: "Pay Fees",
-    hinglish: "Fees Payment",
-    marathi: "फी भरा",
-    hindi: "फीस भुगतान"
   },
   "role.student": {
     english: "Student Profile",
@@ -110,6 +110,318 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     hinglish: "Sinchan Nagar, Parbhani • ERP 2026 Secure Access System",
     marathi: "सिंचन नगर, परभणी • ईआरपी २०२६ सुरक्षित प्रवेश प्रणाली",
     hindi: "सिंचन नगर, परभणी • ईआरपी 2026 सुरक्षित प्रणाली"
+  },
+  "header.admissions_open": {
+    english: "Sinchan Nagar, Parbhani, Maharashtra — Admissions Open (2026)",
+    hinglish: "Sinchan Nagar, Parbhani — Admissions Open (2026)",
+    marathi: "सिंचन नगर, परभणी, महाराष्ट्र — नवीन प्रवेश सुरू (२०२६)",
+    hindi: "सिंचन नगर, परभणी, महाराष्ट्र — नए प्रवेश शुरू (2026)"
+  },
+  "header.contact": {
+    english: "Contact:",
+    hinglish: "Contact:",
+    marathi: "संपर्क:",
+    hindi: "संपर्क:"
+  },
+  "header.logout": {
+    english: "Logout",
+    hinglish: "Logout",
+    marathi: "बाहेर पडा",
+    hindi: "लॉगआउट"
+  },
+  "nav.category1": {
+    english: "Dashboard Categories",
+    hinglish: "Main Categories",
+    marathi: "मुख्य विभाग",
+    hindi: "मुख्य विभाग"
+  },
+  "nav.category2": {
+    english: "All Website Features",
+    hinglish: "All Features",
+    marathi: "सर्व पर्याय",
+    hindi: "सभी विकल्प"
+  },
+  "nav.home.desc": {
+    english: "Academy main admissions & faculty portal",
+    hinglish: "Academy main admissions & teachers info",
+    marathi: "अकॅडमी मुख्य प्रवेश आणि शिक्षक माहिती केंद्र",
+    hindi: "एकेडमी मुख्य प्रवेश और शिक्षक जानकारी"
+  },
+  "nav.tracker.desc": {
+    english: "Student progress, mock grades & attendance",
+    hinglish: "Student progress, mock test marks aur attendance",
+    marathi: "विद्यार्थी प्रगती, उपस्थिती आणि गुण नियंत्रण",
+    hindi: "छात्र प्रगति, उपस्थिति और अंक नियंत्रण"
+  },
+  "nav.fees.desc": {
+    english: "Pay academy admission or monthly fees safely",
+    hinglish: "Online ya cash academy fees bhare safely",
+    marathi: "अकॅडमी प्रवेश किंवा मासिक शुल्क सुरक्षितपणे भरा",
+    hindi: "एकेडमी प्रवेश या मासिक शुल्क सुरक्षित रूप से जमा करें"
+  },
+  "nav.lms.desc": {
+    english: "View syllabus materials & assignments",
+    hinglish: "Study materials aur homework assignments dekho",
+    marathi: "अभ्यास साहित्य, नोट्स आणि गृहपाठ तपासा",
+    hindi: "अध्ययन सामग्री, नोट्स और गृहकार्य जांचें"
+  },
+  "auth.existing_tab": {
+    english: "Existing User Login",
+    hinglish: "Old User Login",
+    marathi: "जुने युझर प्रवेश",
+    hindi: "पुराने यूजर लॉगिन"
+  },
+  "auth.new_tab": {
+    english: "New User Register",
+    hinglish: "Naya User Register",
+    marathi: "नवीन युझर नोंदणी",
+    hindi: "नए यूजर रजिस्ट्रेशन"
+  },
+  "auth.choose_role": {
+    english: "Choose Your Role",
+    hinglish: "Apni Role Chune",
+    marathi: "आपली भूमिका निवडा",
+    hindi: "अपनी भूमिका चुनें"
+  },
+  "auth.login_code_title": {
+    english: "7-Digit Secure Login Code",
+    hinglish: "7-Digit Login Code",
+    marathi: "७-अंकी सुरक्षित लॉगिन कोड",
+    hindi: "7-अंकीय सुरक्षित लॉगिन कोड"
+  },
+  "auth.login_code_desc": {
+    english: "For new admissions, we have sent a unique 7-digit secure code directly to your WhatsApp. Please enter that code here to log in.",
+    hinglish: "Aapke registered mobile par humne 7-digit login code WhatsApp kiya hai. Login karne ke liye vo code yaha enter kare.",
+    marathi: "नवीन प्रवेश घेताना आम्ही विद्यार्थ्यांच्या मोबाईलवर ७-अंकी लॉगिन कोड थेट WhatsApp द्वारे पाठवला आहे. लॉगिन करण्यासाठी तो कोड येथे टाकावा.",
+    hindi: "नए प्रवेश के समय हमने आपके मोबाइल पर 7-अंकीय लॉगिन कोड सीधे व्हाट्सएप पर भेजा है। लॉगिन करने के लिए वह कोड यहां दर्ज करें।"
+  },
+  "auth.student_code_label": {
+    english: "Student 7-Digit Login Code *",
+    hinglish: "Student 7-Digit Login Code *",
+    marathi: "विद्यार्थी ७-अंकी लॉगिन कोड *",
+    hindi: "छात्र 7-अंकीय लॉगिन कोड *"
+  },
+  "auth.parent_code_label": {
+    english: "Student Code or Parent Phone Number *",
+    hinglish: "Student Code ya Parent Mobile Number *",
+    marathi: "विद्यार्थी ७-अंकी कोड किंवा पालकांचा फोन नंबर *",
+    hindi: "छात्र कोड या अभिभावक का फोन नंबर *"
+  },
+  "auth.find_code": {
+    english: "Find Code",
+    hinglish: "Find Code",
+    marathi: "लॉगिन कोड शोधा",
+    hindi: "लॉगिन कोड खोजें"
+  },
+  "auth.student_placeholder": {
+    english: "E.g. 8420511",
+    hinglish: "E.g. 8420511",
+    marathi: "उदा. ८४२०५११",
+    hindi: "उदा. 8420511"
+  },
+  "auth.parent_placeholder": {
+    english: "E.g. 7-digit code or 10-digit phone",
+    hinglish: "7-digit code ya 10-digit phone",
+    marathi: "उदा. ७-अंकी कोड किंवा १०-अंकी फोन नंबर",
+    hindi: "उदा. 7-अंकीय कोड या 10-अंकीय फोन"
+  },
+  "auth.admin_pass_label": {
+    english: "Director / Admin Passcode *",
+    hinglish: "Director Admin Passcode *",
+    marathi: "संचालिका / प्रशासक पासवर्ड *",
+    hindi: "निदेशिका / एडमिन पासवर्ड *"
+  },
+  "auth.teacher_pass_label": {
+    english: "Teacher Security PIN *",
+    hinglish: "Teacher Security PIN *",
+    marathi: "शिक्षक सुरक्षा पिन *",
+    hindi: "शिक्षक सुरक्षा पिन *"
+  },
+  "auth.login_btn": {
+    english: "Secure Login",
+    hinglish: "Secure Login",
+    marathi: "प्रवेश करा",
+    hindi: "लॉगिन करें"
+  },
+  "auth.code_finder_title": {
+    english: "Student Code Finder (Demo Tool)",
+    hinglish: "Student Code Finder (Demo Tool)",
+    marathi: "विद्यार्थी लॉगिन कोड शोधक (डेमो टूल)",
+    hindi: "छात्र लॉगिन कोड खोजक (डेमो टूल)"
+  },
+  "auth.code_finder_desc": {
+    english: "For demo testing, you can search for a student's 10-digit mobile number (e.g. 9511668617 or 9876543210) to retrieve their login code instantly.",
+    hinglish: "Demo testing ke liye, aap student ka 10-digit phone number (E.g. 9511668617 ya 9876543210) search karke code nikal sakte hai.",
+    marathi: "डेमो चाचणीसाठी, आपण खाली कोणत्याही विद्यार्थ्याचा १०-अंकी मोबाईल नंबर टाकून (उदा. ९५११६६८६१७ किंवा ९८७६५४३२१०) त्यांचा लॉगिन कोड तात्काळ शोधू शकता.",
+    hindi: "डेमो परीक्षण के लिए, आप नीचे किसी भी छात्र का 10-अंकीय मोबाइल नंबर डालकर (उदा. 9511668617 या 9876543210) उनका लॉगिन कोड तुरंत खोज सकते हैं।"
+  },
+  "auth.search_placeholder": {
+    english: "Enter mobile number or student name...",
+    hinglish: "Mobile number ya student name dale...",
+    marathi: "मोबाईल नंबर किंवा विद्यार्थ्याचे नाव टाका...",
+    hindi: "मोबाइल नंबर या छात्र का नाम दर्ज करें..."
+  },
+  "auth.search_btn": {
+    english: "Search",
+    hinglish: "Search",
+    marathi: "शोध घ्या",
+    hindi: "खोजें"
+  },
+  "auth.student_found": {
+    english: "Student Found!",
+    hinglish: "Student Mil Gaya!",
+    marathi: "विद्यार्थी सापडला!",
+    hindi: "छात्र मिल गया!"
+  },
+  "auth.student_name": {
+    english: "Name:",
+    hinglish: "Name:",
+    marathi: "नाव:",
+    hindi: "नाम:"
+  },
+  "auth.student_phone": {
+    english: "Mobile:",
+    hinglish: "Mobile:",
+    marathi: "मोबाईल क्रमांक:",
+    hindi: "मोबाइल:"
+  },
+  "auth.student_code_display": {
+    english: "7-Digit Login Code:",
+    hinglish: "7-Digit Login Code:",
+    marathi: "७-अंकी लॉगिन कोड:",
+    hindi: "7-अंकीय लॉगिन कोड:"
+  },
+  "auth.autofill_btn": {
+    english: "Auto-fill Code",
+    hinglish: "Auto-fill Code",
+    marathi: "हा कोड ऑटो-फिल करा",
+    hindi: "यह कोड ऑटो-फिल करें"
+  },
+  "auth.new_user_title": {
+    english: "Open New Account",
+    hinglish: "Naya Account Khole",
+    marathi: "नवीन खाते उघडा",
+    hindi: "नया खाता खोलें"
+  },
+  "auth.new_user_desc": {
+    english: "Instant registration for new users. You can explore the academy portal by registering using any of the options below:",
+    hinglish: "Naye users ke liye instant access. Aap neeche diye gaye option se register karke explore kar sakte hai:",
+    marathi: "नवीन युझर्ससाठी थेट प्रवेश. आपण खालीलपैकी कोणत्याही पर्यायाद्वारे नोंदणी करून अकॅडमी पोर्टल एक्सप्लोर करू शकता:",
+    hindi: "नए उपयोगकर्ताओं के लिए तत्काल प्रवेश। आप नीचे दिए गए विकल्पों में से किसी से पंजीकरण करके पोर्टल एक्सप्लोर कर सकते हैं:"
+  },
+  "auth.google_btn": {
+    english: "Sign In with Google",
+    hinglish: "Google se Login kare",
+    marathi: "गुगलद्वारे लॉग इन करा",
+    hindi: "गूगल से लॉगिन करें"
+  },
+  "auth.google_chooser": {
+    english: "Choose Google Account",
+    hinglish: "Google Account Chune",
+    marathi: "गुगल खाते निवडा",
+    hindi: "गूगल खाता चुनें"
+  },
+  "auth.google_another": {
+    english: "Use Another Account",
+    hinglish: "Naya Account Use Kare",
+    marathi: "इतर खाते वापरा",
+    hindi: "अन्य खाता उपयोग करें"
+  },
+  "auth.email_or": {
+    english: "Or Register with Email",
+    hinglish: "Ya Email se Account Banaye",
+    marathi: "किंवा ईमेलने खाते उघडा",
+    hindi: "या ईमेल से खाता खोलें"
+  },
+  "auth.email_label": {
+    english: "Email Address *",
+    hinglish: "Email Address *",
+    marathi: "ईमेल पत्ता *",
+    hindi: "ईमेल पता *"
+  },
+  "auth.pass_label": {
+    english: "Create Password *",
+    hinglish: "Create Password *",
+    marathi: "पासवर्ड तयार करा *",
+    hindi: "पासवर्ड बनाएं *"
+  },
+  "auth.register_btn": {
+    english: "Register with Email",
+    hinglish: "Email se Register kare",
+    marathi: "ईमेलद्वारे नोंदणी करा",
+    hindi: "ईमेल से रजिस्टर करें"
+  },
+  "auth.help_title": {
+    english: "Need Admission? Contact us today:",
+    hinglish: "Admission chahiye? Aaj hi contact kare:",
+    marathi: "प्रवेश हवा आहे? आजच संपर्क करा:",
+    hindi: "प्रवेश चाहिए? आज ही संपर्क करें:"
+  },
+  "auth.footer_rights": {
+    english: "Knowledge is Strength! All Rights Reserved.",
+    hinglish: "Gyan Hi Shakti Hai! All Rights Reserved.",
+    marathi: "ज्ञान हेच सामर्थ्य! सर्व हक्क सुरक्षित.",
+    hindi: "ज्ञान ही शक्ति है! सर्वाधिकार सुरक्षित।"
+  },
+  "auth.not_found": {
+    english: "No student found with this name or number.",
+    hinglish: "Is number ya name se koi student nahi mila.",
+    marathi: "या नंबर किंवा नावाने कोणताही विद्यार्थी सापडला नाही.",
+    hindi: "इस नंबर या नाम से कोई छात्र नहीं मिला।"
+  },
+  "auth.success_msg": {
+    english: "New account created successfully with email!",
+    hinglish: "Email se naya account ban gaya hai!",
+    marathi: "ईमेलद्वारे नवीन खाते यशस्वीरित्या तयार झाले!",
+    hindi: "ईमेल से नया खाता सफलतापूर्वक बन गया!"
+  },
+  "auth.enter_code_student": {
+    english: "Please enter your 7-digit student login code.",
+    hinglish: "Please 7-digit student login code enter kare.",
+    marathi: "कृपया आपला ७-अंकी विद्यार्थी लॉगिन कोड प्रविष्ट करा.",
+    hindi: "कृपया अपना 7-अंकीय छात्र लॉगिन कोड दर्ज करें।"
+  },
+  "auth.enter_code_parent": {
+    english: "Please enter student 7-digit code or parent phone number.",
+    hinglish: "Please student code ya parent ka phone number enter kare.",
+    marathi: "कृपया विद्यार्थी ७-अंकी कोड किंवा पालकांचा फोन नंबर प्रविष्ट करा.",
+    hindi: "कृपया छात्र 7-अंकीय कोड या अभिभावक का फोन नंबर दर्ज करें।"
+  },
+  "auth.enter_pass": {
+    english: "Please enter password or PIN.",
+    hinglish: "Please password ya PIN enter kare.",
+    marathi: "कृपया पासवर्ड किंवा पिन प्रविष्ट करा.",
+    hindi: "कृपया पासवर्ड या पिन दर्ज करें।"
+  },
+  "auth.invalid_server_resp": {
+    english: "Server returned invalid response. Please try again.",
+    hinglish: "Server se galat response mila. Please firse try kare.",
+    marathi: "सर्व्हरकडून अवैध प्रतिसाद मिळाला. कृपया पुन्हा प्रयत्न करा.",
+    hindi: "सर्वर से अमान्य प्रतिक्रिया मिली। कृपया पुनः प्रयास करें।"
+  },
+  "auth.login_failed": {
+    english: "Login failed. Please check credentials.",
+    hinglish: "Login nahi ho paya. Please code checking kare.",
+    marathi: "लॉगिन अयशस्वी झाले. कृपया कोड तपासा.",
+    hindi: "लॉगिन विफल रहा। कृपया क्रेडेंशियल जांचें।"
+  },
+  "auth.login_success_welcome": {
+    english: "Login successful! Welcome, ",
+    hinglish: "Login successful! Welcome, ",
+    marathi: "यशस्वी लॉगिन! स्वागत आहे, ",
+    hindi: "लॉगिन सफल रहा! स्वागत है, "
+  },
+  "auth.enter_email_pass": {
+    english: "Please enter both email and password.",
+    hinglish: "Please email aur password dono dale.",
+    marathi: "कृपया ईमेल आणि पासवर्ड दोन्ही प्रविष्ट करा.",
+    hindi: "कृपया ईमेल और पासवर्ड दोनों दर्ज करें।"
+  },
+  "auth.email_created": {
+    english: "New account created with email!",
+    hinglish: "Email se naya account create ho gaya hai!",
+    marathi: "ईमेलद्वारे नवीन खाते तयार केले गेले!",
+    hindi: "ईमेल द्वारा नया खाता बनाया गया!"
   },
 
   // Home Screen / Admissions
@@ -536,7 +848,7 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
 
   // AI Solver
   "ai.title": {
-    english: "AI Doubt Solving Mentor (मराठी & English)",
+    english: "AI Doubt Solving Mentor",
     hinglish: "AI Doubt Solver & Study Assistant",
     marathi: "एआय २४/७ शंका निवारण मार्गदर्शक",
     hindi: "एआई 24/7 शंका समाधान मार्गदर्शक"
@@ -580,7 +892,7 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     hindi: "निदेशक मुख्य पोर्टल"
   },
   "pass.teacher_title": {
-    english: "शिक्षक दालन (Teacher Portal)",
+    english: "Teacher Portal",
     hinglish: "Teacher Access Portal",
     marathi: "शिक्षक अधिकृत दालन",
     hindi: "शिक्षक अधिकृत पोर्टल"

@@ -501,14 +501,15 @@ export default function App() {
                 {/* CATEGORY 1: DASHBOARD QUICKLINKS */}
                 <div className="space-y-2.5">
                   <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-500 block px-1">
-                    🎯 मुख्य विभाग (Dashboard Categories)
+                    🎯 {t("nav.category1")}
                   </span>
                   
                   <div className="grid grid-cols-1 gap-1">
                     {[
-                      { id: "home", label: "प्रवेश व मुख्य दालन", desc: "Academy main admissions & faculty portal", icon: Award },
-                      { id: "tracker", label: "प्रगती ट्रॅकर (Study Tracker)", desc: "Student progress, mock grades & attendance", icon: GraduationCap, badge: "Special" },
-                      { id: "lms", label: "डिजिटल अभ्यासक्रम", desc: "View syllabus materials & assignments", icon: BookOpen }
+                      { id: "home", label: t("nav.home"), desc: t("nav.home.desc"), icon: Award },
+                      { id: "tracker", label: t("nav.tracker"), desc: t("nav.tracker.desc"), icon: GraduationCap, badge: "Special" },
+                      { id: "fees", label: t("nav.fees"), desc: t("nav.fees.desc"), icon: CreditCard, badge: "New" },
+                      { id: "lms", label: t("nav.lms"), desc: t("nav.lms.desc"), icon: BookOpen }
                     ].map((item) => {
                       const IconComp = item.icon;
                       const isActive = activeTab === item.id;
@@ -546,18 +547,19 @@ export default function App() {
                 {/* CATEGORY 2: ALL CHANNELS & FEATURES */}
                 <div className="space-y-2.5">
                   <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-500 block px-1">
-                    📚 सर्व पर्याय (All Website features)
+                    📚 {t("nav.category2")}
                   </span>
 
                   <div className="grid grid-cols-1 gap-1">
                     {[
-                      { id: "home", label: "Admissions Home", icon: Award, allowed: ["admin", "teacher", "student", "parent"] },
-                      { id: "tracker", label: "Study Progress Tracker", icon: GraduationCap, allowed: ["admin", "teacher", "student", "parent"] },
-                      { id: "erp", label: "Director ERP panel", icon: Landmark, allowed: ["admin"] },
-                      { id: "lms", label: "LMS Digital syllabus", icon: BookOpen, allowed: ["admin", "teacher", "student", "parent"] },
-                      { id: "live", label: "Live Whiteboard Class", icon: Video, allowed: ["admin", "teacher", "student", "parent"] },
-                      { id: "practice", label: "MCQ Practice Tests", icon: GraduationCap, allowed: ["admin", "teacher", "student", "parent"] },
-                      { id: "ai", label: "AI Doubt Solver Guide", icon: BrainCircuit, allowed: ["admin", "teacher", "student", "parent"] }
+                      { id: "home", label: t("nav.home"), icon: Award, allowed: ["admin", "teacher", "student", "parent"] },
+                      { id: "tracker", label: t("nav.tracker"), icon: GraduationCap, allowed: ["admin", "teacher", "student", "parent"] },
+                      { id: "fees", label: t("nav.fees"), icon: CreditCard, allowed: ["admin", "teacher", "student", "parent"] },
+                      { id: "erp", label: t("nav.erp"), icon: Landmark, allowed: ["admin"] },
+                      { id: "lms", label: t("nav.lms"), icon: BookOpen, allowed: ["admin", "teacher", "student", "parent"] },
+                      { id: "live", label: t("nav.live"), icon: Video, allowed: ["admin", "teacher", "student", "parent"] },
+                      { id: "practice", label: t("nav.practice"), icon: GraduationCap, allowed: ["admin", "teacher", "student", "parent"] },
+                      { id: "ai", label: t("nav.ai"), icon: BrainCircuit, allowed: ["admin", "teacher", "student", "parent"] }
                     ]
                       .filter(t => t.allowed.includes(userRole))
                       .map((item) => {
@@ -589,13 +591,13 @@ export default function App() {
               {/* Drawer Footer info */}
               <div className="p-5 border-t border-slate-800 bg-slate-950 text-[11px] text-slate-500 space-y-2.5">
                 <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 flex flex-col gap-1 text-slate-400">
-                  <span className="text-[9px] uppercase font-bold text-slate-500">Contact Desk</span>
+                  <span className="text-[9px] uppercase font-bold text-slate-500">{t("contact.desk")}</span>
                   <p className="font-bold flex items-center gap-1 text-slate-300">
                     📞 <a href="tel:9511668617" className="hover:underline text-amber-500 font-black">9511668617</a>
                   </p>
                 </div>
                 <p className="text-[10px] text-slate-600 leading-normal text-center font-sans">
-                  Sinchan Nagar, Parbhani • ERP 2026 Secure Access System.
+                  {t("address.info")}
                 </p>
               </div>
 
