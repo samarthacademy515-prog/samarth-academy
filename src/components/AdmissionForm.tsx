@@ -3,6 +3,7 @@ import { UserPlus, Sparkles, CheckCircle2, DollarSign, Printer, BookOpen, MapPin
 import { COURSES } from "../data";
 import { Student } from "../types";
 import { useLanguage } from "../context/LanguageContext";
+import { API } from "../config";
 
 interface AdmissionFormProps {
   onAdmissionSuccess: (newStudent: Student) => void;
@@ -78,7 +79,7 @@ Admission details generated at Samarth Academy Portal. Contact: 9511668617`;
     setLatestAdmitted(null);
 
     try {
-      const response = await fetch("/api/students", {
+      const response = await fetch(`${API}/api/students`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData)
