@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Sparkles, Send, GraduationCap, ArrowRightLeft, BookOpen, Clock, Loader2, HelpCircle } from "lucide-react";
+import { API } from "../config";
 
 interface Message {
   role: "user" | "assistant";
@@ -42,7 +43,7 @@ export default function AIDoubtSolver() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/ai/solve", {
+      const response = await fetch(`${API}/api/ai/solve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
