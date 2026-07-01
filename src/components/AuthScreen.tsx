@@ -85,10 +85,16 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
         data = await response.json();
       } else {
         const text = await response.text();
+        console.error("Non-JSON Server Response Received:", {
+          status: response.status,
+          statusText: response.statusText,
+          contentType: contentType,
+          bodySample: text.substring(0, 1000)
+        });
         throw new Error(t("auth.invalid_server_resp"));
       }
 
-      if (!response.ok) {
+      if (!response.ok || data.success === false) {
         throw new Error(data.error || t("auth.login_failed"));
       }
 
@@ -129,6 +135,13 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
       if (contentType && contentType.includes("application/json")) {
         data = await response.json();
       } else {
+        const text = await response.text();
+        console.error("Non-JSON Server Response Received during signup:", {
+          status: response.status,
+          statusText: response.statusText,
+          contentType: contentType,
+          bodySample: text.substring(0, 1000)
+        });
         throw new Error(t("auth.invalid_server_resp"));
       }
 

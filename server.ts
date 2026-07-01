@@ -12,6 +12,14 @@ const DB_FILE = path.join(process.cwd(), "db.json");
 
 app.use(express.json());
 
+app.use((req, res, next) => {
+  console.log(`[REQUEST] ${req.method} ${req.url}`);
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log("[REQUEST BODY]", JSON.stringify(req.body));
+  }
+  next();
+});
+
 // Initialize Lazy Gemini Client helper
 let aiClient: GoogleGenAI | null = null;
 function getGeminiClient() {
@@ -278,7 +286,7 @@ app.post("/api/auth/login", (req, res) => {
           }
         });
       } else {
-        return res.status(401).json({ error: "चुकीचा पासवर्ड! (Invalid Admin Passcode)" });
+        return res.json({ success: false, error: "चुकीचा पासवर्ड! (Invalid Admin Passcode)" });
       }
     }
 
@@ -292,7 +300,7 @@ app.post("/api/auth/login", (req, res) => {
           }
         });
       } else {
-        return res.status(401).json({ error: "चुकीचा पासवर्ड! (Invalid Teacher Passcode)" });
+        return res.json({ success: false, error: "चुकीचा पासवर्ड! (Invalid Teacher Passcode)" });
       }
     }
 
@@ -310,7 +318,7 @@ app.post("/api/auth/login", (req, res) => {
           }
         });
       } else {
-        return res.status(401).json({ error: "चुकीचा ७-अंकी लॉगिन कोड! (Invalid 7-digit Login Code)" });
+        return res.json({ success: false, error: "चुकीचा ७-अंकी लॉगिन कोड! (Invalid 7-digit Login Code)" });
       }
     }
 
@@ -329,14 +337,14 @@ app.post("/api/auth/login", (req, res) => {
           }
         });
       } else {
-        return res.status(401).json({ error: "चुकीचा कोड किंवा मोबाईल नंबर! (Invalid Child's Code or Mobile)" });
+        return res.json({ success: false, error: "चुकीचा कोड किंवा मोबाईल नंबर! (Invalid Child's Code or Mobile)" });
       }
     }
 
-    return res.status(400).json({ error: "Invalid role or credentials" });
+    return res.json({ success: false, error: "Invalid role or credentials" });
   } catch (err: any) {
     console.error("CRITICAL ERROR IN LOGIN ROUTE:", err);
-    return res.status(500).json({ error: "सर्व्हरमध्ये त्रुटी आली: " + (err.message || "Unknown error") });
+    return res.json({ success: false, error: "सर्व्हरमध्ये त्रुटी आली: " + (err.message || "Unknown error") });
   }
 });
 
