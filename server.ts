@@ -277,7 +277,7 @@ app.post("/api/auth/login", (req, res) => {
     }
 
     if (role === "admin") {
-      if (passcode === "80852") {
+      if (passcode === "80855") {
         return res.json({
           success: true,
           user: {
@@ -291,7 +291,7 @@ app.post("/api/auth/login", (req, res) => {
     }
 
     if (role === "teacher") {
-      if (passcode === "10986") {
+      if (passcode === "10985") {
         return res.json({
           success: true,
           user: {

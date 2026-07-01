@@ -30,7 +30,7 @@ export default function AdminPasscodeModal({ isOpen, onClose, onSuccess, role = 
     e.preventDefault();
     if (isVerifying) return;
 
-    const expectedPasscode = role === "teacher" ? "10986" : "80852";
+    const expectedPasscode = role === "teacher" ? "10985" : "80855";
 
     if (passcode === expectedPasscode) {
       setIsVerifying(true);
