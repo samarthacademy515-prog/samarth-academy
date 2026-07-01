@@ -12,15 +12,14 @@ const PORT = Number(process.env.PORT) || 3000;
 const DB_FILE = path.join(process.cwd(), "db.json");
 
 
-app.use(
-  cors({
-    origin: [
-      "https://samarth-academy1.vercel.app",
-      "http://localhost:5173",
-    ],
-    credentials: true,
-  })
-);
+app.use(cors({
+  origin: true,
+  credentials: true,
+}));
+
+app.options("*", cors());
+
+app.use(express.json());
 
 app.use(express.json());
 
