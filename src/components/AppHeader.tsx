@@ -1,13 +1,14 @@
-import { GraduationCap, Phone, ShieldCheck, User, Users, BookOpen } from "lucide-react";
+import { GraduationCap, Phone, ShieldCheck, User, Users, BookOpen, Menu } from "lucide-react";
 import { ACADEMY_INFO } from "../data";
 import logoImage from "../assets/images/academy_logo_1782839442092.jpg";
 
 interface AppHeaderProps {
   currentRole: string;
   onChangeRole: (role: string) => void;
+  onMenuClick?: () => void;
 }
 
-export default function AppHeader({ currentRole, onChangeRole }: AppHeaderProps) {
+export default function AppHeader({ currentRole, onChangeRole, onMenuClick }: AppHeaderProps) {
   const roles = [
     { id: "admin", label: "Director / Admin", icon: ShieldCheck, color: "bg-red-500 text-white" },
     { id: "teacher", label: "Teacher", icon: BookOpen, color: "bg-emerald-500 text-white" },
@@ -32,16 +33,28 @@ export default function AppHeader({ currentRole, onChangeRole }: AppHeaderProps)
       {/* Main Header Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
         {/* Brand/Identity */}
-        <div className="flex items-center gap-4">
-          <div className="relative group shrink-0">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-red-600 rounded-2xl blur-md opacity-75 group-hover:opacity-100 transition duration-300"></div>
-            <div className="relative bg-slate-950 rounded-2xl p-1 border border-slate-800 shadow-xl overflow-hidden flex items-center justify-center">
-              <img 
-                src={logoImage} 
-                alt="Samarth Academy Logo" 
-                className="w-14 h-14 object-cover rounded-xl"
-                referrerPolicy="no-referrer"
-              />
+        <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
+          <div className="flex items-center gap-3">
+            {/* 3-Lines hamburger menu */}
+            <button
+              onClick={onMenuClick}
+              className="p-2.5 text-slate-400 hover:text-white bg-slate-950 rounded-xl border border-slate-800 hover:border-slate-700 transition-all flex items-center justify-center cursor-pointer shrink-0 shadow-lg active:scale-95"
+              id="hamburger-menu-btn"
+              title="Menu Options"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            
+            <div className="relative group shrink-0">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-red-600 rounded-2xl blur-md opacity-75 group-hover:opacity-100 transition duration-300"></div>
+              <div className="relative bg-slate-950 rounded-2xl p-1 border border-slate-800 shadow-xl overflow-hidden flex items-center justify-center">
+                <img 
+                  src={logoImage} 
+                  alt="Samarth Academy Logo" 
+                  className="w-14 h-14 object-cover rounded-xl"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
             </div>
           </div>
           <div>

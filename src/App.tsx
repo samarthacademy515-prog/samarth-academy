@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { GraduationCap, Landmark, BookOpen, Video, BrainCircuit, UserCheck, Phone, MapPin, ShieldCheck, Star, Users, Briefcase, Award, MessageCircle } from "lucide-react";
+import { GraduationCap, Landmark, BookOpen, Video, BrainCircuit, UserCheck, Phone, MapPin, ShieldCheck, Star, Users, Briefcase, Award, MessageCircle, Menu, X, LayoutDashboard, Grid, LineChart } from "lucide-react";
 import AppHeader from "./components/AppHeader";
 import AdmissionForm from "./components/AdmissionForm";
 import LiveClassroom from "./components/LiveClassroom";
@@ -9,6 +9,7 @@ import AIDoubtSolver from "./components/AIDoubtSolver";
 import ERPManagement from "./components/ERPManagement";
 import LMSViewer from "./components/LMSViewer";
 import AdminPasscodeModal from "./components/AdminPasscodeModal";
+import StudyTracker from "./components/StudyTracker";
 import { Student, FeeLog, Assignment } from "./types";
 import { ACADEMY_INFO, COURSES, TEACHERS } from "./data";
 import logoImage from "./assets/images/academy_logo_1782839442092.jpg";
@@ -24,6 +25,7 @@ export default function App() {
   });
   const [activeTab, setActiveTab] = useState<string>("home");
   const [showPasscodeModal, setShowPasscodeModal] = useState<boolean>(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
 
   // Fetch all db state from full-stack Express API
   const fetchState = async () => {
@@ -72,8 +74,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950" id="app-shell-container">
-      {/* Top Navigation & Brand Header */}
-      <AppHeader currentRole={userRole} onChangeRole={handleRoleChange} />
+      {/* Top Navigation & Brand Header with Hamburger Click callback */}
+      <AppHeader currentRole={userRole} onChangeRole={handleRoleChange} onMenuClick={() => setIsDrawerOpen(true)} />
 
       {/* Main Layout Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full flex flex-col gap-6">
@@ -82,6 +84,7 @@ export default function App() {
         <nav className="flex flex-wrap gap-2 border-b border-slate-800 pb-3" id="app-tab-navigation">
           {[
             { id: "home", label: "प्रवेश व अकॅडमी (Home / Admissions)", icon: Award, allowed: ["admin", "teacher", "student", "parent"] },
+            { id: "tracker", label: "प्रगती ट्रॅकर (Study Tracker)", icon: GraduationCap, allowed: ["admin", "teacher", "student", "parent"] },
             { id: "erp", label: "ईआरपी व्यवस्थापन (ERP Panel)", icon: Landmark, allowed: ["admin"] },
             { id: "lms", label: "डिजिटल अभ्यासक्रम (LMS Study)", icon: BookOpen, allowed: ["admin", "teacher", "student", "parent"] },
             { id: "live", label: "थेट वर्ग (Live Whiteboard)", icon: Video, allowed: ["admin", "teacher", "student", "parent"] },
@@ -257,6 +260,17 @@ export default function App() {
                   </div>
                 )}
 
+                {/* --- STUDY TRACKER PROGRESS REPORT PANEL --- */}
+                {activeTab === "tracker" && (
+                  <StudyTracker
+                    students={students}
+                    assignments={assignments}
+                    feeLogs={feeLogs}
+                    userRole={userRole}
+                    onRefreshData={fetchState}
+                  />
+                )}
+
                 {/* --- TAB 2: ERP MANAGEMENT --- */}
                 {activeTab === "erp" && (
                   <ERPManagement
@@ -342,6 +356,159 @@ export default function App() {
           </span>
         </a>
       </div>
+
+      {/* 3-Lines Hamburger Sidebar Drawer Overlay */}
+      <AnimatePresence>
+        {isDrawerOpen && (
+          <>
+            {/* Backdrop Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsDrawerOpen(false)}
+              className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 cursor-pointer"
+              id="drawer-backdrop"
+            />
+
+            {/* Sliding Drawer Body */}
+            <motion.div
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 220 }}
+              className="fixed top-0 left-0 bottom-0 w-80 max-w-[90vw] bg-slate-900 border-r border-slate-800 z-50 flex flex-col shadow-2xl overflow-hidden"
+              id="drawer-body"
+            >
+              {/* Header */}
+              <div className="p-5 border-b border-slate-800 bg-slate-950 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 to-red-600 p-0.5 flex items-center justify-center">
+                    <img src={logoImage} className="w-full h-full object-cover rounded-md" referrerPolicy="no-referrer" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-white tracking-tight">Samarth Academy</h3>
+                    <p className="text-[10px] text-amber-500 font-bold font-mono">Batch 2026 ERP</p>
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => setIsDrawerOpen(false)}
+                  className="p-1.5 text-slate-400 hover:text-white bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-lg transition-colors cursor-pointer"
+                  id="drawer-close-btn"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Scrollable Categories List */}
+              <div className="flex-1 overflow-y-auto p-5 space-y-6 scrollbar-none" id="drawer-categories">
+                
+                {/* CATEGORY 1: DASHBOARD QUICKLINKS */}
+                <div className="space-y-2.5">
+                  <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-500 block px-1">
+                    🎯 मुख्य विभाग (Dashboard Categories)
+                  </span>
+                  
+                  <div className="grid grid-cols-1 gap-1">
+                    {[
+                      { id: "home", label: "प्रवेश व मुख्य दालन", desc: "Academy main admissions & faculty portal", icon: Award },
+                      { id: "tracker", label: "प्रगती ट्रॅकर (Study Tracker)", desc: "Student progress, mock grades & attendance", icon: GraduationCap, badge: "Special" },
+                      { id: "lms", label: "डिजिटल अभ्यासक्रम", desc: "View syllabus materials & assignments", icon: BookOpen }
+                    ].map((item) => {
+                      const IconComp = item.icon;
+                      const isActive = activeTab === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            setActiveTab(item.id);
+                            setIsDrawerOpen(false);
+                          }}
+                          className={`w-full text-left p-3 rounded-xl border transition-all flex items-start gap-3 cursor-pointer ${
+                            isActive
+                              ? "bg-gradient-to-r from-red-600/10 to-amber-600/10 border-amber-500/30 text-amber-400"
+                              : "bg-slate-950/20 border-transparent text-slate-300 hover:bg-slate-950/60 hover:text-white"
+                          }`}
+                        >
+                          <IconComp className={`w-5 h-5 mt-0.5 shrink-0 ${isActive ? "text-amber-400" : "text-slate-500"}`} />
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-bold leading-none">{item.label}</span>
+                              {item.badge && (
+                                <span className="text-[8px] bg-red-600 text-white font-extrabold px-1.5 py-0.5 rounded-full animate-pulse leading-none">
+                                  {item.badge}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[9px] text-slate-500 leading-normal">{item.desc}</p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* CATEGORY 2: ALL CHANNELS & FEATURES */}
+                <div className="space-y-2.5">
+                  <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-500 block px-1">
+                    📚 सर्व पर्याय (All Website features)
+                  </span>
+
+                  <div className="grid grid-cols-1 gap-1">
+                    {[
+                      { id: "home", label: "Admissions Home", icon: Award, allowed: ["admin", "teacher", "student", "parent"] },
+                      { id: "tracker", label: "Study Progress Tracker", icon: GraduationCap, allowed: ["admin", "teacher", "student", "parent"] },
+                      { id: "erp", label: "Director ERP panel", icon: Landmark, allowed: ["admin"] },
+                      { id: "lms", label: "LMS Digital syllabus", icon: BookOpen, allowed: ["admin", "teacher", "student", "parent"] },
+                      { id: "live", label: "Live Whiteboard Class", icon: Video, allowed: ["admin", "teacher", "student", "parent"] },
+                      { id: "practice", label: "MCQ Practice Tests", icon: GraduationCap, allowed: ["admin", "teacher", "student", "parent"] },
+                      { id: "ai", label: "AI Doubt Solver Guide", icon: BrainCircuit, allowed: ["admin", "teacher", "student", "parent"] }
+                    ]
+                      .filter(t => t.allowed.includes(userRole))
+                      .map((item) => {
+                        const IconComp = item.icon;
+                        const isActive = activeTab === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => {
+                              setActiveTab(item.id);
+                              setIsDrawerOpen(false);
+                            }}
+                            className={`w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-colors cursor-pointer ${
+                              isActive
+                                ? "bg-slate-950 text-white font-bold border-l-2 border-amber-500"
+                                : "text-slate-400 hover:text-white hover:bg-slate-950/40"
+                            }`}
+                          >
+                            <IconComp className={`w-4 h-4 shrink-0 ${isActive ? "text-amber-400" : "text-slate-500"}`} />
+                            {item.label}
+                          </button>
+                        );
+                      })}
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Drawer Footer info */}
+              <div className="p-5 border-t border-slate-800 bg-slate-950 text-[11px] text-slate-500 space-y-2.5">
+                <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 flex flex-col gap-1 text-slate-400">
+                  <span className="text-[9px] uppercase font-bold text-slate-500">Contact Desk</span>
+                  <p className="font-bold flex items-center gap-1 text-slate-300">
+                    📞 <a href="tel:9511668617" className="hover:underline text-amber-500 font-black">9511668617</a>
+                  </p>
+                </div>
+                <p className="text-[10px] text-slate-600 leading-normal text-center font-sans">
+                  Sinchan Nagar, Parbhani • ERP 2026 Secure Access System.
+                </p>
+              </div>
+
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
