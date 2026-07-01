@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { UserPlus, Sparkles, CheckCircle2, DollarSign, Printer, BookOpen, MapPin, Award } from "lucide-react";
+import { UserPlus, Sparkles, CheckCircle2, DollarSign, Printer, BookOpen, MapPin, Award, MessageCircle } from "lucide-react";
 import { COURSES } from "../data";
 import { Student } from "../types";
 
@@ -48,6 +48,22 @@ export default function AdmissionForm({ onAdmissionSuccess }: AdmissionFormProps
     }));
   };
 
+  const getWhatsAppUrl = (student: Student) => {
+    const msg = `*🆕 NEW STUDENT ADMISSION - SAMARTH ACADEMY*
+--------------------------------------------------
+*Student ID:* ${student.id}
+*Student Name:* ${student.name}
+*Course/Standard:* ${student.standard}
+*Section:* ${student.section}
+*Parent's Name:* ${student.parentName}
+*Contact Number:* ${student.phone}
+*Address:* ${student.address}
+*Tuition Fee:* ₹${student.totalFees.toLocaleString()}
+--------------------------------------------------
+Admission details generated at Samarth Academy Portal. Contact: 9511668617`;
+    return `https://api.whatsapp.com/send?phone=919511668617&text=${encodeURIComponent(msg)}`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.parentName || !formData.phone) {
@@ -74,6 +90,13 @@ export default function AdmissionForm({ onAdmissionSuccess }: AdmissionFormProps
       setLatestAdmitted(registered);
       setSuccessMessage(`Congratulations! ${registered.name} is successfully admitted to Samarth Academy.`);
       onAdmissionSuccess(registered);
+      
+      // Auto trigger sending details to WhatsApp
+      try {
+        window.open(getWhatsAppUrl(registered), "_blank");
+      } catch (e) {
+        console.warn("Pop-up blocked:", e);
+      }
       
       // Reset form but keep address
       setFormData({
@@ -324,16 +347,27 @@ export default function AdmissionForm({ onAdmissionSuccess }: AdmissionFormProps
                 </div>
               )}
 
-              <div className="flex gap-3 justify-end">
+              <div className="flex flex-col sm:flex-row gap-3 justify-end items-stretch sm:items-center">
+                {latestAdmitted && (
+                  <a
+                    href={getWhatsAppUrl(latestAdmitted)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold py-2 px-4 rounded-lg flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-950/35 transition-colors"
+                    id="whatsapp-share-receipt-btn"
+                  >
+                    <MessageCircle className="w-4 h-4 text-emerald-100" /> WhatsApp वर पाठवा (Send Form)
+                  </a>
+                )}
                 <button
                   onClick={printReceipt}
-                  className="bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold py-2 px-4 rounded-lg flex items-center gap-1.5"
+                  className="bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-1.5"
                 >
                   <Printer className="w-4 h-4" /> Print Admission
                 </button>
                 <button
                   onClick={() => { setSuccessMessage(null); setLatestAdmitted(null); }}
-                  className="bg-gradient-to-r from-red-600 to-amber-600 text-white text-xs font-bold py-2 px-4 rounded-lg"
+                  className="bg-gradient-to-r from-red-600 to-amber-600 text-white text-xs font-bold py-2 px-4 rounded-lg flex items-center justify-center"
                 >
                   Admit Another Student
                 </button>

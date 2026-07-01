@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { GraduationCap, Landmark, BookOpen, Video, BrainCircuit, UserCheck, Phone, MapPin, ShieldCheck, Star, Users, Briefcase, Award } from "lucide-react";
+import { GraduationCap, Landmark, BookOpen, Video, BrainCircuit, UserCheck, Phone, MapPin, ShieldCheck, Star, Users, Briefcase, Award, MessageCircle } from "lucide-react";
 import AppHeader from "./components/AppHeader";
 import AdmissionForm from "./components/AdmissionForm";
 import LiveClassroom from "./components/LiveClassroom";
@@ -8,6 +8,7 @@ import PracticeTests from "./components/PracticeTests";
 import AIDoubtSolver from "./components/AIDoubtSolver";
 import ERPManagement from "./components/ERPManagement";
 import LMSViewer from "./components/LMSViewer";
+import AdminPasscodeModal from "./components/AdminPasscodeModal";
 import { Student, FeeLog, Assignment } from "./types";
 import { ACADEMY_INFO, COURSES, TEACHERS } from "./data";
 import logoImage from "./assets/images/academy_logo_1782839442092.jpg";
@@ -17,8 +18,12 @@ export default function App() {
   const [feeLogs, setFeeLogs] = useState<FeeLog[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState<string>("admin"); // default Admin/Director
+  const [userRole, setUserRole] = useState<string>(() => {
+    const isUnlocked = sessionStorage.getItem("admin_unlocked") === "true";
+    return isUnlocked ? "admin" : "student";
+  });
   const [activeTab, setActiveTab] = useState<string>("home");
+  const [showPasscodeModal, setShowPasscodeModal] = useState<boolean>(false);
 
   // Fetch all db state from full-stack Express API
   const fetchState = async () => {
@@ -43,11 +48,20 @@ export default function App() {
   }, []);
 
   const handleRoleChange = (role: string) => {
-    setUserRole(role);
-    // Auto shift tabs to prevent locked layouts if shifting roles
-    if (role === "student" || role === "parent") {
-      if (activeTab === "erp") {
-        setActiveTab("lms");
+    if (role === "admin") {
+      const isUnlocked = sessionStorage.getItem("admin_unlocked") === "true";
+      if (isUnlocked) {
+        setUserRole("admin");
+      } else {
+        setShowPasscodeModal(true);
+      }
+    } else {
+      setUserRole(role);
+      // Auto shift tabs to prevent locked layouts if shifting roles
+      if (role === "student" || role === "parent" || role === "teacher") {
+        if (activeTab === "erp") {
+          setActiveTab("home");
+        }
       }
     }
   };
@@ -68,7 +82,7 @@ export default function App() {
         <nav className="flex flex-wrap gap-2 border-b border-slate-800 pb-3" id="app-tab-navigation">
           {[
             { id: "home", label: "प्रवेश व अकॅडमी (Home / Admissions)", icon: Award, allowed: ["admin", "teacher", "student", "parent"] },
-            { id: "erp", label: "ईआरपी व्यवस्थापन (ERP Panel)", icon: Landmark, allowed: ["admin", "teacher"] },
+            { id: "erp", label: "ईआरपी व्यवस्थापन (ERP Panel)", icon: Landmark, allowed: ["admin"] },
             { id: "lms", label: "डिजिटल अभ्यासक्रम (LMS Study)", icon: BookOpen, allowed: ["admin", "teacher", "student", "parent"] },
             { id: "live", label: "थेट वर्ग (Live Whiteboard)", icon: Video, allowed: ["admin", "teacher", "student", "parent"] },
             { id: "practice", label: "सराव परीक्षा (Test Center)", icon: GraduationCap, allowed: ["admin", "teacher", "student", "parent"] },
@@ -291,6 +305,43 @@ export default function App() {
           </p>
         </div>
       </footer>
+
+      {/* Admin Security Passcode Dialog */}
+      <AdminPasscodeModal
+        isOpen={showPasscodeModal}
+        onClose={() => setShowPasscodeModal(false)}
+        onSuccess={() => {
+          sessionStorage.setItem("admin_unlocked", "true");
+          setUserRole("admin");
+          setShowPasscodeModal(false);
+        }}
+      />
+
+      {/* Floating WhatsApp Chat Widget */}
+      <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2" id="whatsapp-floating-widget">
+        <a
+          href="https://api.whatsapp.com/send?phone=919511668617&text=Hello%20Samarth%20Academy%2C%20I%20have%20some%20queries%20about%20admissions."
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group relative flex items-center justify-center w-14 h-14 bg-emerald-500 hover:bg-emerald-400 text-white rounded-full shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 animate-fade-in"
+          id="whatsapp-floating-link"
+          title="Chat on WhatsApp with Samarth Academy"
+        >
+          {/* Glowing/pulsing ring */}
+          <span className="absolute -inset-1 rounded-full bg-emerald-500/50 opacity-75 animate-ping group-hover:opacity-100 transition-opacity"></span>
+          
+          {/* Inner Button Container */}
+          <span className="relative z-10 flex items-center justify-center w-full h-full bg-emerald-500 hover:bg-emerald-400 rounded-full border border-emerald-400/30 shadow-inner">
+            <MessageCircle className="w-7 h-7 text-white" />
+          </span>
+
+          {/* Floating Tooltip label */}
+          <span className="absolute right-16 scale-0 group-hover:scale-100 bg-slate-900 text-emerald-400 border border-slate-800 text-[11px] font-black tracking-tight px-3 py-1.5 rounded-xl whitespace-nowrap shadow-xl transition-all duration-200 origin-right flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
+            WhatsApp Chat
+          </span>
+        </a>
+      </div>
     </div>
   );
 }
