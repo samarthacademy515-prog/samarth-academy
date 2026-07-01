@@ -2,12 +2,14 @@ import React, { useState } from "react";
 import { UserPlus, Sparkles, CheckCircle2, DollarSign, Printer, BookOpen, MapPin, Award, MessageCircle } from "lucide-react";
 import { COURSES } from "../data";
 import { Student } from "../types";
+import { useLanguage } from "../context/LanguageContext";
 
 interface AdmissionFormProps {
   onAdmissionSuccess: (newStudent: Student) => void;
 }
 
 export default function AdmissionForm({ onAdmissionSuccess }: AdmissionFormProps) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     name: "",
     section: "School Section" as "School Section" | "Competitive Exams",
@@ -130,10 +132,10 @@ Admission details generated at Samarth Academy Portal. Contact: 9511668617`;
       <div className="p-6 bg-gradient-to-r from-red-950 via-slate-900 to-red-950 border-b border-slate-800">
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           <UserPlus className="w-5.5 h-5.5 text-amber-500" />
-          नवीन विद्यार्थी प्रवेश अर्ज (Student Admission Form)
+          {t("form.title")}
         </h2>
         <p className="text-slate-400 text-xs mt-1">
-          Samarth Academy, Parbhani — Fill the form below to register a student for competitive exams or state school syllabus.
+          {t("form.sub")}
         </p>
       </div>
 
@@ -142,7 +144,7 @@ Admission details generated at Samarth Academy Portal. Contact: 9511668617`;
         <form onSubmit={handleSubmit} className="space-y-4" id="admission-main-form">
           <div>
             <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              विद्यार्थ्याचे नाव (Full Student Name) *
+              {t("form.name")} *
             </label>
             <input
               type="text"
@@ -157,7 +159,7 @@ Admission details generated at Samarth Academy Portal. Contact: 9511668617`;
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                इयत्ता / कोर्स निवडा (Choose Standard / Exam) *
+                {t("form.standard")} *
               </label>
               <select
                 value={formData.standard}
@@ -179,7 +181,7 @@ Admission details generated at Samarth Academy Portal. Contact: 9511668617`;
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                कोर्स विभाग (Section Category)
+                {t("form.section")}
               </label>
               <div className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-amber-400 font-medium">
                 {formData.section}
@@ -190,7 +192,7 @@ Admission details generated at Samarth Academy Portal. Contact: 9511668617`;
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                पालकांचे नाव (Parent/Guardian Name) *
+                {t("form.parent")} *
               </label>
               <input
                 type="text"
@@ -204,7 +206,7 @@ Admission details generated at Samarth Academy Portal. Contact: 9511668617`;
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                संपर्क क्रमांक (Mobile Number) *
+                {t("form.phone")} *
               </label>
               <input
                 type="tel"
@@ -220,7 +222,7 @@ Admission details generated at Samarth Academy Portal. Contact: 9511668617`;
 
           <div>
             <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              पत्ता (Permanent Address) *
+              {t("form.address")} *
             </label>
             <input
               type="text"
@@ -258,7 +260,7 @@ Admission details generated at Samarth Academy Portal. Contact: 9511668617`;
             ) : (
               <>
                 <Sparkles className="w-5 h-5 text-amber-200" />
-                प्रवेश निश्चित करा (Confirm Admission)
+                {t("form.submit")}
               </>
             )}
           </button>
@@ -275,6 +277,29 @@ Admission details generated at Samarth Academy Portal. Contact: 9511668617`;
                   <p className="text-xs text-slate-300 mt-0.5">{successMessage}</p>
                 </div>
               </div>
+
+              {latestAdmitted && (
+                <div className="bg-emerald-950/40 border border-emerald-500/20 text-emerald-300 p-4.5 rounded-2xl space-y-2 mt-2">
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="w-5 h-5 text-emerald-400 shrink-0 animate-pulse" />
+                    <strong className="text-xs font-black uppercase tracking-wider text-emerald-400">
+                      स्वयंचलित WhatsApp संदेश पाठवला गेला! (Auto WhatsApp Dispatched)
+                    </strong>
+                  </div>
+                  <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3 text-[11px] font-sans text-slate-300 leading-relaxed w-full">
+                    <p className="text-[10px] uppercase font-bold text-slate-500">मोबाईल नंबर (Mobile):</p>
+                    <p className="font-mono text-white mb-2">{latestAdmitted.phone}</p>
+                    <p className="text-[10px] uppercase font-bold text-slate-500">संदेश मजकूर (Guidance Message Payload):</p>
+                    <p className="italic bg-slate-900/60 p-2.5 rounded border border-slate-800 mt-1 whitespace-pre-wrap leading-relaxed text-slate-200">
+                      प्रिय {latestAdmitted.name}, आपले समर्थ अकॅडमी मध्ये स्वागत आहे! आपला ७-अंकी सुरक्षित लॉगिन कोड आहे: *{(latestAdmitted as any).loginCode || "-------"}*. हा कोड वापरून आपण https://samarth-academy.in वर Student किंवा Parent म्हणून लॉगिन करू शकता. डिजिटल अभ्यासक्रम (LMS), थेट वर्ग (Whiteboard) आणि साप्ताहिक प्रगती पाहण्यासाठी हा कोड नेहमी वापरावा. - समर्थ अकॅडमी, परभणी.
+                    </p>
+                    <div className="flex justify-between items-center mt-3 pt-2 border-t border-slate-800 text-[10px] font-bold">
+                      <span className="text-slate-400">वितरण स्थिती (Gateway Status):</span>
+                      <span className="text-emerald-400 flex items-center gap-1">● यशस्वीरित्या वितरित (Delivered ✔)</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {latestAdmitted && (
                 <div id="admission-receipt-print" className="bg-white text-slate-900 p-6 rounded-xl shadow-2xl border border-slate-200 font-sans">
@@ -317,6 +342,16 @@ Admission details generated at Samarth Academy Portal. Contact: 9511668617`;
                     <div className="col-span-2">
                       <span className="text-slate-500 block uppercase text-[9px] font-bold">Address</span>
                       <strong className="text-slate-950 font-bold">{latestAdmitted.address}</strong>
+                    </div>
+
+                    <div className="col-span-2 bg-amber-50 border border-amber-200 p-2.5 rounded-lg mt-3 text-center">
+                      <span className="text-amber-800 block uppercase text-[10px] font-extrabold tracking-wider">🔑 विद्यार्थी लॉगिन कोड (Student Login Code)</span>
+                      <strong className="text-amber-950 font-mono text-lg font-black tracking-widest block mt-0.5">
+                        {(latestAdmitted as any).loginCode || "-------"}
+                      </strong>
+                      <span className="text-[10px] text-slate-600 block mt-1 leading-normal font-medium">
+                        हा ७-अंकी सुरक्षित लॉगिन कोड आहे. या कोडचा वापर करून आपण Student किंवा Parent म्हणून वेबसाईटवर ऑनलाईन लॉगिन करू शकता.
+                      </span>
                     </div>
                   </div>
 

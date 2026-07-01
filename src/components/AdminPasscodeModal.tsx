@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Lock, Unlock, X, ShieldAlert, KeyRound, CheckCircle2, AlertTriangle } from "lucide-react";
+import { useLanguage } from "../context/LanguageContext";
 
 interface AdminPasscodeModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  role?: "admin" | "teacher";
 }
 
-export default function AdminPasscodeModal({ isOpen, onClose, onSuccess }: AdminPasscodeModalProps) {
+export default function AdminPasscodeModal({ isOpen, onClose, onSuccess, role = "admin" }: AdminPasscodeModalProps) {
+  const { t } = useLanguage();
   const [passcode, setPasscode] = useState("");
   const [error, setError] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -27,7 +30,9 @@ export default function AdminPasscodeModal({ isOpen, onClose, onSuccess }: Admin
     e.preventDefault();
     if (isVerifying) return;
 
-    if (passcode === "80852") {
+    const expectedPasscode = role === "teacher" ? "10986" : "80852";
+
+    if (passcode === expectedPasscode) {
       setIsVerifying(true);
       setError(false);
       setToast({ type: "success", message: "Login Successful" });
@@ -124,9 +129,13 @@ export default function AdminPasscodeModal({ isOpen, onClose, onSuccess }: Admin
                 )}
               </div>
               <div>
-                <h3 className="text-lg font-black text-white tracking-tight">Director / Admin Portal</h3>
+                <h3 className="text-lg font-black text-white tracking-tight">
+                  {role === "teacher" ? t("role.teacher") : t("role.admin")}
+                </h3>
                 <p className="text-slate-400 text-xs mt-1">
-                  Enter the official security authorization passcode to unlock administrative privileges.
+                  {role === "teacher" 
+                    ? "Enter the official teacher authorization passcode to unlock classroom privileges."
+                    : "Enter the official security authorization passcode to unlock administrative privileges."}
                 </p>
               </div>
             </div>

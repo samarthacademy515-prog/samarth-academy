@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { GraduationCap, Landmark, BookOpen, Video, BrainCircuit, UserCheck, Phone, MapPin, ShieldCheck, Star, Users, Briefcase, Award, MessageCircle, Menu, X, LayoutDashboard, Grid, LineChart } from "lucide-react";
+import { GraduationCap, Landmark, BookOpen, Video, BrainCircuit, UserCheck, Phone, MapPin, ShieldCheck, Star, Users, Briefcase, Award, MessageCircle, Menu, X, LayoutDashboard, Grid, LineChart, Globe } from "lucide-react";
 import AppHeader from "./components/AppHeader";
 import AdmissionForm from "./components/AdmissionForm";
 import LiveClassroom from "./components/LiveClassroom";
@@ -10,21 +10,49 @@ import ERPManagement from "./components/ERPManagement";
 import LMSViewer from "./components/LMSViewer";
 import AdminPasscodeModal from "./components/AdminPasscodeModal";
 import StudyTracker from "./components/StudyTracker";
+import AuthScreen from "./components/AuthScreen";
 import { Student, FeeLog, Assignment } from "./types";
 import { ACADEMY_INFO, COURSES, TEACHERS } from "./data";
 import logoImage from "./assets/images/academy_logo_1782839442092.jpg";
+import { useLanguage } from "./context/LanguageContext";
+import { LANGUAGE_NAMES, Language } from "./translations";
 
 export default function App() {
+  const { language, setLanguage, t } = useLanguage();
   const [students, setStudents] = useState<Student[]>([]);
+
   const [feeLogs, setFeeLogs] = useState<FeeLog[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Universal Logged-In User State
+  const [currentUser, setCurrentUser] = useState<{
+    role: "admin" | "teacher" | "student" | "parent" | "guest";
+    name: string;
+    email?: string;
+    phone?: string;
+    studentId?: string;
+    loginCode?: string;
+  } | null>(() => {
+    const saved = localStorage.getItem("samarth_academy_current_user");
+    return saved ? JSON.parse(saved) : null;
+  });
+
   const [userRole, setUserRole] = useState<string>(() => {
-    const isUnlocked = sessionStorage.getItem("admin_unlocked") === "true";
-    return isUnlocked ? "admin" : "student";
+    const saved = localStorage.getItem("samarth_academy_current_user");
+    if (saved) {
+      const u = JSON.parse(saved);
+      return u.role;
+    }
+    const isAdminUnlocked = sessionStorage.getItem("admin_unlocked") === "true";
+    if (isAdminUnlocked) return "admin";
+    const isTeacherUnlocked = sessionStorage.getItem("teacher_unlocked") === "true";
+    if (isTeacherUnlocked) return "teacher";
+    return "student";
   });
   const [activeTab, setActiveTab] = useState<string>("home");
   const [showPasscodeModal, setShowPasscodeModal] = useState<boolean>(false);
+  const [passcodeModalRole, setPasscodeModalRole] = useState<"admin" | "teacher">("admin");
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
 
   // Fetch all db state from full-stack Express API
@@ -49,21 +77,31 @@ export default function App() {
     fetchState();
   }, []);
 
+  const handleLoginSuccess = (user: any) => {
+    setCurrentUser(user);
+    localStorage.setItem("samarth_academy_current_user", JSON.stringify(user));
+    setUserRole(user.role);
+    if (user.role === "admin") {
+      sessionStorage.setItem("admin_unlocked", "true");
+    } else if (user.role === "teacher") {
+      sessionStorage.setItem("teacher_unlocked", "true");
+    }
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem("samarth_academy_current_user");
+    sessionStorage.removeItem("admin_unlocked");
+    sessionStorage.removeItem("teacher_unlocked");
+    setUserRole("student");
+    setActiveTab("home");
+  };
+
   const handleRoleChange = (role: string) => {
-    if (role === "admin") {
-      const isUnlocked = sessionStorage.getItem("admin_unlocked") === "true";
-      if (isUnlocked) {
-        setUserRole("admin");
-      } else {
-        setShowPasscodeModal(true);
-      }
-    } else {
-      setUserRole(role);
-      // Auto shift tabs to prevent locked layouts if shifting roles
-      if (role === "student" || role === "parent" || role === "teacher") {
-        if (activeTab === "erp") {
-          setActiveTab("home");
-        }
+    setUserRole(role);
+    if (role === "student" || role === "parent") {
+      if (activeTab === "erp") {
+        setActiveTab("home");
       }
     }
   };
@@ -72,10 +110,21 @@ export default function App() {
     fetchState(); // Fully refresh synced server-side DB
   };
 
+  // If there is no authenticated session, redirect to the custom Auth screen
+  if (!currentUser) {
+    return <AuthScreen onLoginSuccess={handleLoginSuccess} />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950" id="app-shell-container">
       {/* Top Navigation & Brand Header with Hamburger Click callback */}
-      <AppHeader currentRole={userRole} onChangeRole={handleRoleChange} onMenuClick={() => setIsDrawerOpen(true)} />
+      <AppHeader 
+        currentRole={userRole} 
+        onChangeRole={handleRoleChange} 
+        onMenuClick={() => setIsDrawerOpen(true)} 
+        currentUser={currentUser}
+        onLogout={handleLogout}
+      />
 
       {/* Main Layout Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full flex flex-col gap-6">
@@ -83,13 +132,13 @@ export default function App() {
         {/* Navigation Tabs Menu */}
         <nav className="flex flex-wrap gap-2 border-b border-slate-800 pb-3" id="app-tab-navigation">
           {[
-            { id: "home", label: "प्रवेश व अकॅडमी (Home / Admissions)", icon: Award, allowed: ["admin", "teacher", "student", "parent"] },
-            { id: "tracker", label: "प्रगती ट्रॅकर (Study Tracker)", icon: GraduationCap, allowed: ["admin", "teacher", "student", "parent"] },
-            { id: "erp", label: "ईआरपी व्यवस्थापन (ERP Panel)", icon: Landmark, allowed: ["admin"] },
-            { id: "lms", label: "डिजिटल अभ्यासक्रम (LMS Study)", icon: BookOpen, allowed: ["admin", "teacher", "student", "parent"] },
-            { id: "live", label: "थेट वर्ग (Live Whiteboard)", icon: Video, allowed: ["admin", "teacher", "student", "parent"] },
-            { id: "practice", label: "सराव परीक्षा (Test Center)", icon: GraduationCap, allowed: ["admin", "teacher", "student", "parent"] },
-            { id: "ai", label: "समर्थ AI मार्गदर्शक (Doubt Solver)", icon: BrainCircuit, allowed: ["admin", "teacher", "student", "parent"] }
+            { id: "home", icon: Award, allowed: ["admin", "teacher", "student", "parent"] },
+            { id: "tracker", icon: GraduationCap, allowed: ["admin", "teacher", "student", "parent"] },
+            { id: "erp", icon: Landmark, allowed: ["admin"] },
+            { id: "lms", icon: BookOpen, allowed: ["admin", "teacher", "student", "parent"] },
+            { id: "live", icon: Video, allowed: ["admin", "teacher", "student", "parent"] },
+            { id: "practice", icon: GraduationCap, allowed: ["admin", "teacher", "student", "parent"] },
+            { id: "ai", icon: BrainCircuit, allowed: ["admin", "teacher", "student", "parent"] }
           ]
             .filter((tab) => tab.allowed.includes(userRole))
             .map((tab) => {
@@ -107,7 +156,7 @@ export default function App() {
                   }`}
                 >
                   <IconComp className="w-4 h-4 shrink-0" />
-                  {tab.label}
+                  {t("nav." + tab.id)}
                 </button>
               );
             })}
@@ -139,23 +188,23 @@ export default function App() {
                       <div className="space-y-4 text-center md:text-left z-10 max-w-2xl">
                         <div className="inline-flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 px-3 py-1 rounded-full text-xs font-bold font-mono">
                           <Star className="w-3.5 h-3.5 fill-amber-400" />
-                          ज्ञान हेच सामर्थ्य
+                          {t("nav.tagline")}
                         </div>
                         <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-none">
-                          समर्थ अकॅडमी, परभणी
+                          {t("nav.brand")}
                         </h2>
                         <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
-                          सिंचन नगर, परभणी येथील नामांकित शिक्षण संस्था. शालेय स्तरापासून (४ थी ते १० वी) ते सर्व स्पर्धा परीक्षांपर्यंत (MPSC, Scholarship, Navodaya, NMMS, तलाठी, पोलीस भरती) उत्कृष्ट व दर्जेदार डिजिटल शिक्षण देण्यासाठी कटिबद्ध.
+                          {t("home.sub")}
                         </p>
                         <div className="flex flex-wrap gap-4 justify-center md:justify-start text-xs font-semibold text-slate-400">
                           <span className="flex items-center gap-1">
                             <MapPin className="w-4 h-4 text-red-500" /> Sinchan Nagar, Parbhani
                           </span>
                           <span className="flex items-center gap-1">
-                            <Phone className="w-4 h-4 text-emerald-500" /> 9511668617
+                            <Phone className="w-4 h-4 text-emerald-500" /> {ACADEMY_INFO.contact}
                           </span>
                           <span className="flex items-center gap-1">
-                            <UserCheck className="w-4 h-4 text-amber-500" /> Director: Pratibha R. Ingole
+                            <UserCheck className="w-4 h-4 text-amber-500" /> Director: {ACADEMY_INFO.director}
                           </span>
                         </div>
                       </div>
@@ -182,10 +231,10 @@ export default function App() {
                       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
                         <h3 className="text-lg font-bold text-white flex items-center gap-2">
                           <BookOpen className="w-5 h-5 text-amber-500" />
-                          शालेय विभाग (School Section) — ४ थी ते १० वी
+                          {t("home.school")}
                         </h3>
                         <p className="text-xs text-slate-400 leading-relaxed">
-                          महाराष्ट्र राज्य बोर्डानुसार सर्व विषयांचे सखोल मार्गदर्शन व नियमित सराव चाचण्या.
+                          {t("home.school.desc")}
                         </p>
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           {COURSES.school.map((s) => (
@@ -201,10 +250,10 @@ export default function App() {
                       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
                         <h3 className="text-lg font-bold text-white flex items-center gap-2">
                           <ShieldCheck className="w-5 h-5 text-amber-500" />
-                          स्पर्धा परीक्षा विभाग (Competitive Exams)
+                          {t("home.comp")}
                         </h3>
                         <p className="text-xs text-slate-400 leading-relaxed">
-                          NMMS, शिष्यवृत्ती (Scholarship), नवोदय प्रवेश परीक्षा तसेच MPSC, तलाठी व पोलीस भरतीची परिपूर्ण तयारी.
+                          {t("home.comp.desc")}
                         </p>
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           {COURSES.competitive.map((c) => (
@@ -225,10 +274,10 @@ export default function App() {
                       <div className="border-b border-slate-800 pb-3">
                         <h3 className="text-lg font-bold text-white flex items-center gap-2">
                           <Users className="w-5 h-5 text-amber-500" />
-                          आमचे तज्ञ मार्गदर्शक (Expert Faculty Board)
+                          {t("home.faculty")}
                         </h3>
                         <p className="text-xs text-slate-400 mt-1">
-                          Experienced subject matter experts and tutors providing quality guidance from school level to competitive stages.
+                          {t("home.faculty.sub")}
                         </p>
                       </div>
 
@@ -320,13 +369,19 @@ export default function App() {
         </div>
       </footer>
 
-      {/* Admin Security Passcode Dialog */}
+      {/* Security Passcode Dialog for Admin/Teacher */}
       <AdminPasscodeModal
         isOpen={showPasscodeModal}
+        role={passcodeModalRole}
         onClose={() => setShowPasscodeModal(false)}
         onSuccess={() => {
-          sessionStorage.setItem("admin_unlocked", "true");
-          setUserRole("admin");
+          if (passcodeModalRole === "teacher") {
+            sessionStorage.setItem("teacher_unlocked", "true");
+            setUserRole("teacher");
+          } else {
+            sessionStorage.setItem("admin_unlocked", "true");
+            setUserRole("admin");
+          }
           setShowPasscodeModal(false);
         }}
       />
@@ -404,6 +459,34 @@ export default function App() {
               {/* Scrollable Categories List */}
               <div className="flex-1 overflow-y-auto p-5 space-y-6 scrollbar-none" id="drawer-categories">
                 
+                {/* CATEGORY 0: LANGUAGE SELECTION */}
+                <div className="space-y-2.5 pb-2 border-b border-slate-800">
+                  <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-500 block px-1 flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-amber-500" /> {t("language.select")}
+                  </span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(Object.keys(LANGUAGE_NAMES) as Language[]).map((langKey) => {
+                      const isSel = language === langKey;
+                      return (
+                        <button
+                          key={langKey}
+                          onClick={() => setLanguage(langKey)}
+                          className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all text-center cursor-pointer flex flex-col justify-center items-center gap-1 ${
+                            isSel
+                              ? "bg-amber-500/10 border-amber-500 text-amber-400"
+                              : "bg-slate-950/40 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-white"
+                          }`}
+                        >
+                          <span className="text-[9px] uppercase font-black tracking-wider leading-none">
+                            {langKey === "english" ? "EN" : langKey === "hinglish" ? "HN-EN" : langKey === "marathi" ? "MR" : "HI"}
+                          </span>
+                          <span className="text-[11px] font-bold leading-none">{LANGUAGE_NAMES[langKey]}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* CATEGORY 1: DASHBOARD QUICKLINKS */}
                 <div className="space-y-2.5">
                   <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-500 block px-1">

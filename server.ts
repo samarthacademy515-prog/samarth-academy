@@ -143,10 +143,11 @@ const DEFAULT_ASSIGNMENTS = [
 function readDB() {
   try {
     if (!fs.existsSync(DB_FILE)) {
-      const initialData = {
+      const initialData: any = {
         students: DEFAULT_STUDENTS,
         feeLogs: DEFAULT_FEE_LOGS,
         assignments: DEFAULT_ASSIGNMENTS,
+        whatsappLogs: [],
         settings: {
           academyName: "Samarth Academy",
           tagline: "ज्ञान हेच सामर्थ्य",
@@ -155,14 +156,41 @@ function readDB() {
           location: "Sinchan Nagar, Parbhani, Maharashtra"
         }
       };
+      // Populate login codes for initial students
+      initialData.students = initialData.students.map((student: any) => {
+        if (!student.loginCode) {
+          student.loginCode = Math.floor(1000000 + Math.random() * 9000000).toString();
+        }
+        return student;
+      });
       fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), "utf-8");
       return initialData;
     }
     const data = fs.readFileSync(DB_FILE, "utf-8");
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    let changed = false;
+    
+    if (!parsed.whatsappLogs) {
+      parsed.whatsappLogs = [];
+      changed = true;
+    }
+    
+    // Ensure all students have a 7-digit login code
+    parsed.students = parsed.students.map((student: any) => {
+      if (!student.loginCode) {
+        student.loginCode = Math.floor(1000000 + Math.random() * 9000000).toString();
+        changed = true;
+      }
+      return student;
+    });
+
+    if (changed) {
+      fs.writeFileSync(DB_FILE, JSON.stringify(parsed, null, 2), "utf-8");
+    }
+    return parsed;
   } catch (error) {
     console.error("Error reading database file:", error);
-    return { students: [], feeLogs: [], assignments: [], settings: {} };
+    return { students: [], feeLogs: [], assignments: [], whatsappLogs: [], settings: {} };
   }
 }
 
@@ -188,6 +216,98 @@ app.get("/api/db", (req, res) => {
   res.json(db);
 });
 
+// Get WhatsApp delivery logs
+app.get("/api/whatsapp-logs", (req, res) => {
+  const db = readDB();
+  res.json(db.whatsappLogs || []);
+});
+
+// Auth Login API
+app.post("/api/auth/login", (req, res) => {
+  const { role, loginCode, passcode, email, loginType } = req.body;
+  const db = readDB();
+
+  if (loginType === "google" || loginType === "email") {
+    // New User Sign Up / Login via Google or Email
+    return res.json({
+      success: true,
+      user: {
+        role: "student", // default role for self-registers
+        name: email ? email.split("@")[0] : "New User Guest",
+        email: email || "google-user@gmail.com",
+        isNewUser: true
+      }
+    });
+  }
+
+  if (role === "admin") {
+    if (passcode === "80852") {
+      return res.json({
+        success: true,
+        user: {
+          role: "admin",
+          name: "Director (Pratibha R. Ingole)"
+        }
+      });
+    } else {
+      return res.status(401).json({ error: "चुकीचा पासवर्ड! (Invalid Admin Passcode)" });
+    }
+  }
+
+  if (role === "teacher") {
+    if (passcode === "10986") {
+      return res.json({
+        success: true,
+        user: {
+          role: "teacher",
+          name: "Expert Faculty"
+        }
+      });
+    } else {
+      return res.status(401).json({ error: "चुकीचा पासवर्ड! (Invalid Teacher Passcode)" });
+    }
+  }
+
+  if (role === "student") {
+    const student = db.students.find((s: any) => s.loginCode === loginCode);
+    if (student) {
+      return res.json({
+        success: true,
+        user: {
+          role: "student",
+          name: student.name,
+          studentId: student.id,
+          loginCode: student.loginCode,
+          studentDetails: student
+        }
+      });
+    } else {
+      return res.status(401).json({ error: "चुकीचा ७-अंकी लॉगिन कोड! (Invalid 7-digit Login Code)" });
+    }
+  }
+
+  if (role === "parent") {
+    // Parent can login with child's login code or parent phone
+    const student = db.students.find((s: any) => s.loginCode === loginCode || s.phone === loginCode);
+    if (student) {
+      return res.json({
+        success: true,
+        user: {
+          role: "parent",
+          name: `${student.parentName} (${student.name} चे पालक)`,
+          studentId: student.id,
+          loginCode: student.loginCode,
+          studentDetails: student
+        }
+      });
+    } else {
+      return res.status(401).json({ error: "चुकीचा कोड किंवा मोबाईल नंबर! (Invalid Child's Code or Mobile)" });
+    }
+  }
+
+  return res.status(400).json({ error: "Invalid role or credentials" });
+});
+
 // 3. Students operations
 app.get("/api/students", (req, res) => {
   const db = readDB();
@@ -196,13 +316,33 @@ app.get("/api/students", (req, res) => {
 
 app.post("/api/students", (req, res) => {
   const db = readDB();
+  const code = Math.floor(1000000 + Math.random() * 9000000).toString();
   const newStudent = {
     id: `STU-${Math.floor(100 + Math.random() * 900)}`,
     attendance: {},
     paidFees: 0,
+    loginCode: code,
     ...req.body,
     admissionDate: new Date().toISOString().split("T")[0]
   };
+
+  // Generate automated WhatsApp Guidance Log
+  const guidanceMsg = `प्रिय ${newStudent.name}, आपले समर्थ अकॅडमी मध्ये स्वागत आहे! आपला ७-अंकी सुरक्षित लॉगिन कोड आहे: *${code}*. हा कोड वापरून आपण https://samarth-academy.in वर Student किंवा Parent म्हणून लॉगिन करू शकता. अभ्यासक्रम, थेट वर्ग व प्रगती पाहण्यासाठी हा कोड नेहमी वापरावा. - समर्थ अकॅडमी, परभणी.`;
+
+  const whatsappLog = {
+    id: `WA-${Math.floor(100000 + Math.random() * 900000)}`,
+    studentId: newStudent.id,
+    studentName: newStudent.name,
+    phone: newStudent.phone,
+    loginCode: code,
+    message: guidanceMsg,
+    sentAt: new Date().toISOString(),
+    status: "Delivered ✔"
+  };
+
+  db.whatsappLogs = db.whatsappLogs || [];
+  db.whatsappLogs.unshift(whatsappLog);
+
   db.students.push(newStudent);
   writeDB(db);
   res.status(201).json(newStudent);

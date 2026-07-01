@@ -1,19 +1,24 @@
-import { GraduationCap, Phone, ShieldCheck, User, Users, BookOpen, Menu } from "lucide-react";
+import { GraduationCap, Phone, ShieldCheck, User, Users, BookOpen, Menu, LogOut } from "lucide-react";
 import { ACADEMY_INFO } from "../data";
 import logoImage from "../assets/images/academy_logo_1782839442092.jpg";
+import { useLanguage } from "../context/LanguageContext";
 
 interface AppHeaderProps {
   currentRole: string;
   onChangeRole: (role: string) => void;
   onMenuClick?: () => void;
+  currentUser?: any;
+  onLogout?: () => void;
 }
 
-export default function AppHeader({ currentRole, onChangeRole, onMenuClick }: AppHeaderProps) {
+export default function AppHeader({ currentRole, onChangeRole, onMenuClick, currentUser, onLogout }: AppHeaderProps) {
+  const { t } = useLanguage();
+  
   const roles = [
-    { id: "admin", label: "Director / Admin", icon: ShieldCheck, color: "bg-red-500 text-white" },
-    { id: "teacher", label: "Teacher", icon: BookOpen, color: "bg-emerald-500 text-white" },
-    { id: "student", label: "Student", icon: GraduationCap, color: "bg-blue-500 text-white" },
-    { id: "parent", label: "Parent", icon: Users, color: "bg-amber-500 text-white" }
+    { id: "admin", label: t("role.admin"), icon: ShieldCheck, color: "bg-red-500 text-white" },
+    { id: "teacher", label: t("role.teacher"), icon: BookOpen, color: "bg-emerald-500 text-white" },
+    { id: "student", label: t("role.student"), icon: GraduationCap, color: "bg-blue-500 text-white" },
+    { id: "parent", label: t("role.parent"), icon: Users, color: "bg-amber-500 text-white" }
   ];
 
   return (
@@ -59,38 +64,71 @@ export default function AppHeader({ currentRole, onChangeRole, onMenuClick }: Ap
           </div>
           <div>
             <div className="flex items-baseline gap-2">
-              <h1 className="text-2xl font-black text-white tracking-tight">{ACADEMY_INFO.name}</h1>
+              <h1 className="text-2xl font-black text-white tracking-tight">{t("nav.brand")}</h1>
               <span className="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded font-mono font-bold">Parbhani</span>
             </div>
             <p className="text-amber-400 text-xs font-semibold tracking-wider font-sans mt-0.5">
-              {ACADEMY_INFO.tagline} • {ACADEMY_INFO.mission}
+              {t("nav.tagline")} • Sinchan Nagar Parbhani
             </p>
           </div>
         </div>
 
-        {/* Dynamic Role Switcher */}
-        <div className="flex flex-wrap items-center gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
-          <span className="text-[10px] uppercase tracking-wider text-slate-500 px-2.5 font-bold">Role:</span>
-          {roles.map((r) => {
-            const IconComponent = r.icon;
-            const isActive = currentRole === r.id;
-            return (
+        {/* User Details / Profile & Logout Panel */}
+        {currentUser ? (
+          <div className="flex items-center gap-3 w-full md:w-auto justify-end bg-slate-950 p-2 rounded-2xl border border-slate-800 shadow-xl" id="header-user-panel">
+            {/* User Profile Badge */}
+            <div className="flex items-center gap-2.5 px-3 py-1">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-600 to-amber-500 flex items-center justify-center text-white text-xs font-black uppercase border border-slate-800 shadow-inner">
+                {currentUser.name ? currentUser.name.substring(0, 2).toUpperCase() : "G"}
+              </div>
+              <div className="text-left">
+                <span className="text-[9px] text-slate-500 font-extrabold uppercase tracking-widest block leading-none">
+                  {currentUser.role}
+                </span>
+                <strong className="text-xs text-white font-bold block mt-0.5 max-w-[160px] truncate">
+                  {currentUser.name}
+                </strong>
+              </div>
+            </div>
+
+            {/* Logout Button */}
+            {onLogout && (
               <button
-                key={r.id}
-                id={`role-btn-${r.id}`}
-                onClick={() => onChangeRole(r.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
-                  isActive
-                    ? `${r.color} shadow-lg scale-102`
-                    : "text-slate-400 hover:text-white hover:bg-slate-900"
-                }`}
+                onClick={onLogout}
+                className="px-3.5 py-2 text-slate-400 hover:text-red-400 bg-slate-900 hover:bg-red-500/10 border border-slate-800 hover:border-red-500/20 rounded-xl transition-all flex items-center justify-center cursor-pointer active:scale-95 text-xs font-bold gap-1.5"
+                title="Log Out"
+                id="btn-header-logout"
               >
-                <IconComponent className="w-3.5 h-3.5" />
-                {r.label}
+                <LogOut className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden sm:inline">बाहेर पडा (Logout)</span>
               </button>
-            );
-          })}
-        </div>
+            )}
+          </div>
+        ) : (
+          /* Dynamic Role Switcher (Unlikely to be shown since Auth gates) */
+          <div className="flex flex-wrap items-center gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
+            <span className="text-[10px] uppercase tracking-wider text-slate-500 px-2.5 font-bold">Role:</span>
+            {roles.map((r) => {
+              const IconComponent = r.icon;
+              const isActive = currentRole === r.id;
+              return (
+                <button
+                  key={r.id}
+                  id={`role-btn-${r.id}`}
+                  onClick={() => onChangeRole(r.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                    isActive
+                      ? `${r.color} shadow-lg scale-102`
+                      : "text-slate-400 hover:text-white hover:bg-slate-900"
+                  }`}
+                >
+                  <IconComponent className="w-3.5 h-3.5" />
+                  {r.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     </header>
   );
