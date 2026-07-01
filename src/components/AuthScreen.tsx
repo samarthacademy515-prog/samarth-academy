@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 import logoImage from "../assets/images/academy_logo_1782839442092.jpg";
+import { API } from "../config";
 
 interface AuthScreenProps {
   onLoginSuccess: (user: {
@@ -186,7 +187,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
     setFinderLoading(true);
     setFoundStudent(null);
     try {
-      const res = await fetch("/api/students");
+      const res = await fetch(`${API}/api/students`);
       if (res.ok) {
         const students = await res.json();
         const found = students.find((s: any) => 
