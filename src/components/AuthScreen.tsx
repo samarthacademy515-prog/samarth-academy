@@ -79,7 +79,15 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
         body: JSON.stringify(payload)
       });
 
-      const data = await response.json();
+      let data: any = {};
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error("सर्व्हरवरून अवैध प्रतिसाद मिळाला. (Server returned invalid response. Please try again.)");
+      }
+
       if (!response.ok) {
         throw new Error(data.error || "लॉगिन अयशस्वी झाले.");
       }
@@ -116,7 +124,14 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
         })
       });
 
-      const data = await response.json();
+      let data: any = {};
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        throw new Error("सर्व्हरकडून अवैध प्रतिसाद मिळाला. (Server returned invalid response. Please try again.)");
+      }
+
       setSuccessMsg("ईमेलद्वारे नवीन खाते तयार केले गेले!");
       setTimeout(() => {
         onLoginSuccess({
