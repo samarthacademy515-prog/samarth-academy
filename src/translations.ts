@@ -63,6 +63,12 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     marathi: "एआय शंका निवारण",
     hindi: "एआई शंका समाधान"
   },
+  "nav.fees": {
+    english: "Pay Fees",
+    hinglish: "Fees Payment",
+    marathi: "फी भरा",
+    hindi: "फीस भुगतान"
+  },
   "role.student": {
     english: "Student Profile",
     hinglish: "Student Account",

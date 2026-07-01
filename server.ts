@@ -170,8 +170,34 @@ function readDB() {
     const parsed = JSON.parse(data);
     let changed = false;
     
-    if (!parsed.whatsappLogs) {
+    if (!parsed.students || !Array.isArray(parsed.students)) {
+      parsed.students = DEFAULT_STUDENTS;
+      changed = true;
+    }
+    
+    if (!parsed.feeLogs || !Array.isArray(parsed.feeLogs)) {
+      parsed.feeLogs = DEFAULT_FEE_LOGS;
+      changed = true;
+    }
+    
+    if (!parsed.assignments || !Array.isArray(parsed.assignments)) {
+      parsed.assignments = DEFAULT_ASSIGNMENTS;
+      changed = true;
+    }
+    
+    if (!parsed.whatsappLogs || !Array.isArray(parsed.whatsappLogs)) {
       parsed.whatsappLogs = [];
+      changed = true;
+    }
+    
+    if (!parsed.settings) {
+      parsed.settings = {
+        academyName: "Samarth Academy",
+        tagline: "ज्ञान हेच सामर्थ्य",
+        director: "Pratibha Rajesh Ingole",
+        phone: "9511668617",
+        location: "Sinchan Nagar, Parbhani, Maharashtra"
+      };
       changed = true;
     }
     
@@ -224,88 +250,95 @@ app.get("/api/whatsapp-logs", (req, res) => {
 
 // Auth Login API
 app.post("/api/auth/login", (req, res) => {
-  const { role, loginCode, passcode, email, loginType } = req.body;
-  const db = readDB();
+  try {
+    const { role, loginCode, passcode, email, loginType } = req.body || {};
+    const db = readDB();
 
-  if (loginType === "google" || loginType === "email") {
-    // New User Sign Up / Login via Google or Email
-    return res.json({
-      success: true,
-      user: {
-        role: "student", // default role for self-registers
-        name: email ? email.split("@")[0] : "New User Guest",
-        email: email || "google-user@gmail.com",
-        isNewUser: true
+    console.log("Auth Login Attempt:", { role, loginType, hasCode: !!loginCode, hasPass: !!passcode });
+
+    if (loginType === "google" || loginType === "email") {
+      // New User Sign Up / Login via Google or Email
+      return res.json({
+        success: true,
+        user: {
+          role: "student", // default role for self-registers
+          name: email ? email.split("@")[0] : "New User Guest",
+          email: email || "google-user@gmail.com",
+          isNewUser: true
+        }
+      });
+    }
+
+    if (role === "admin") {
+      if (passcode === "80852") {
+        return res.json({
+          success: true,
+          user: {
+            role: "admin",
+            name: "Director (Pratibha R. Ingole)"
+          }
+        });
+      } else {
+        return res.status(401).json({ error: "चुकीचा पासवर्ड! (Invalid Admin Passcode)" });
       }
-    });
-  }
-
-  if (role === "admin") {
-    if (passcode === "80852") {
-      return res.json({
-        success: true,
-        user: {
-          role: "admin",
-          name: "Director (Pratibha R. Ingole)"
-        }
-      });
-    } else {
-      return res.status(401).json({ error: "चुकीचा पासवर्ड! (Invalid Admin Passcode)" });
     }
-  }
 
-  if (role === "teacher") {
-    if (passcode === "10986") {
-      return res.json({
-        success: true,
-        user: {
-          role: "teacher",
-          name: "Expert Faculty"
-        }
-      });
-    } else {
-      return res.status(401).json({ error: "चुकीचा पासवर्ड! (Invalid Teacher Passcode)" });
+    if (role === "teacher") {
+      if (passcode === "10986") {
+        return res.json({
+          success: true,
+          user: {
+            role: "teacher",
+            name: "Expert Faculty"
+          }
+        });
+      } else {
+        return res.status(401).json({ error: "चुकीचा पासवर्ड! (Invalid Teacher Passcode)" });
+      }
     }
-  }
 
-  if (role === "student") {
-    const student = db.students.find((s: any) => s.loginCode === loginCode);
-    if (student) {
-      return res.json({
-        success: true,
-        user: {
-          role: "student",
-          name: student.name,
-          studentId: student.id,
-          loginCode: student.loginCode,
-          studentDetails: student
-        }
-      });
-    } else {
-      return res.status(401).json({ error: "चुकीचा ७-अंकी लॉगिन कोड! (Invalid 7-digit Login Code)" });
+    if (role === "student") {
+      const student = (db.students || []).find((s: any) => s.loginCode === loginCode);
+      if (student) {
+        return res.json({
+          success: true,
+          user: {
+            role: "student",
+            name: student.name,
+            studentId: student.id,
+            loginCode: student.loginCode,
+            studentDetails: student
+          }
+        });
+      } else {
+        return res.status(401).json({ error: "चुकीचा ७-अंकी लॉगिन कोड! (Invalid 7-digit Login Code)" });
+      }
     }
-  }
 
-  if (role === "parent") {
-    // Parent can login with child's login code or parent phone
-    const student = db.students.find((s: any) => s.loginCode === loginCode || s.phone === loginCode);
-    if (student) {
-      return res.json({
-        success: true,
-        user: {
-          role: "parent",
-          name: `${student.parentName} (${student.name} चे पालक)`,
-          studentId: student.id,
-          loginCode: student.loginCode,
-          studentDetails: student
-        }
-      });
-    } else {
-      return res.status(401).json({ error: "चुकीचा कोड किंवा मोबाईल नंबर! (Invalid Child's Code or Mobile)" });
+    if (role === "parent") {
+      // Parent can login with child's login code or parent phone
+      const student = (db.students || []).find((s: any) => s.loginCode === loginCode || s.phone === loginCode);
+      if (student) {
+        return res.json({
+          success: true,
+          user: {
+            role: "parent",
+            name: `${student.parentName} (${student.name} चे पालक)`,
+            studentId: student.id,
+            loginCode: student.loginCode,
+            studentDetails: student
+          }
+        });
+      } else {
+        return res.status(401).json({ error: "चुकीचा कोड किंवा मोबाईल नंबर! (Invalid Child's Code or Mobile)" });
+      }
     }
-  }
 
-  return res.status(400).json({ error: "Invalid role or credentials" });
+    return res.status(400).json({ error: "Invalid role or credentials" });
+  } catch (err: any) {
+    console.error("CRITICAL ERROR IN LOGIN ROUTE:", err);
+    return res.status(500).json({ error: "सर्व्हरमध्ये त्रुटी आली: " + (err.message || "Unknown error") });
+  }
 });
 
 // 3. Students operations

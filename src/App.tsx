@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { GraduationCap, Landmark, BookOpen, Video, BrainCircuit, UserCheck, Phone, MapPin, ShieldCheck, Star, Users, Briefcase, Award, MessageCircle, Menu, X, LayoutDashboard, Grid, LineChart, Globe } from "lucide-react";
+import { GraduationCap, Landmark, BookOpen, Video, BrainCircuit, UserCheck, Phone, MapPin, ShieldCheck, Star, Users, Briefcase, Award, MessageCircle, Menu, X, LayoutDashboard, Grid, LineChart, Globe, CreditCard } from "lucide-react";
 import AppHeader from "./components/AppHeader";
 import AdmissionForm from "./components/AdmissionForm";
 import LiveClassroom from "./components/LiveClassroom";
@@ -11,6 +11,7 @@ import LMSViewer from "./components/LMSViewer";
 import AdminPasscodeModal from "./components/AdminPasscodeModal";
 import StudyTracker from "./components/StudyTracker";
 import AuthScreen from "./components/AuthScreen";
+import PayFees from "./components/PayFees";
 import { Student, FeeLog, Assignment } from "./types";
 import { ACADEMY_INFO, COURSES, TEACHERS } from "./data";
 import logoImage from "./assets/images/academy_logo_1782839442092.jpg";
@@ -134,6 +135,7 @@ export default function App() {
           {[
             { id: "home", icon: Award, allowed: ["admin", "teacher", "student", "parent"] },
             { id: "tracker", icon: GraduationCap, allowed: ["admin", "teacher", "student", "parent"] },
+            { id: "fees", icon: CreditCard, allowed: ["admin", "teacher", "student", "parent"] },
             { id: "erp", icon: Landmark, allowed: ["admin"] },
             { id: "lms", icon: BookOpen, allowed: ["admin", "teacher", "student", "parent"] },
             { id: "live", icon: Video, allowed: ["admin", "teacher", "student", "parent"] },
@@ -351,6 +353,15 @@ export default function App() {
                 {/* --- TAB 6: AI DOUBT SOLVER --- */}
                 {activeTab === "ai" && (
                   <AIDoubtSolver />
+                )}
+
+                {/* --- TAB 7: FEE PAYMENT CENTER --- */}
+                {activeTab === "fees" && (
+                  <PayFees
+                    students={students}
+                    currentUser={currentUser as any}
+                    onPaymentSuccess={fetchState}
+                  />
                 )}
 
               </motion.div>
