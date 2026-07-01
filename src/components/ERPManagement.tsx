@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Users, BookOpen, CreditCard, ClipboardCheck, Search, PlusCircle, Trash2, Printer, CheckCircle2, UserCheck, AlertTriangle, IndianRupee, Landmark } from "lucide-react";
 import { Student, FeeLog } from "../types";
 import { COURSES } from "../data";
+import { API } from "../config";
 
 interface ERPManagementProps {
   students: Student[];
@@ -70,7 +71,7 @@ export default function ERPManagement({ students, feeLogs, onRefreshData }: ERPM
 
   const handleSaveAttendance = async () => {
     try {
-      const response = await fetch("/api/attendance", {
+      const response = await fetch(`${API}/api/attendance`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -98,7 +99,7 @@ export default function ERPManagement({ students, feeLogs, onRefreshData }: ERPM
     }
 
     try {
-      const response = await fetch("/api/fees/pay", {
+      const response = await fetch(`${API}/api/fees/pay`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
