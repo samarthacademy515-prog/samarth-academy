@@ -3,12 +3,26 @@ import path from "path";
 import fs from "fs";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
+import cors from "cors";
 
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const DB_FILE = path.join(process.cwd(), "db.json");
+
+
+app.use(
+  cors({
+    origin: [
+      "https://samarth-academy1.vercel.app",
+      "http://localhost:5173",
+    ],
+    credentials: true,
+  })
+);
+
+app.use(express.json());
 
 app.use(express.json());
 
