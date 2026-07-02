@@ -277,36 +277,111 @@ export default function App() {
                     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
                       <div className="border-b border-slate-800 pb-3">
                         <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                          <Users className="w-5 h-5 text-amber-500" />
-                          {t("home.faculty")}
+                          <GraduationCap className="w-5 h-5 text-amber-500" />
+                          SAMARTH ACADEMY FACULTY DIRECTORY
                         </h3>
-                        <p className="text-xs text-slate-400 mt-1">
-                          {t("home.faculty.sub")}
+                        <p className="text-xs text-slate-400 mt-1 uppercase">
+                          OFFICIAL COURSE LECTURERS & THEIR ASSIGNED ACADEMIC SUBJECTS
                         </p>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {TEACHERS.map((tch) => (
-                          <div key={tch.id} className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-3">
-                            <div className="w-10 h-10 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center">
-                              <Briefcase className="w-5 h-5 text-amber-500" />
-                            </div>
-                            <div>
-                              <h4 className="font-bold text-white text-sm">{tch.name}</h4>
-                              <p className="text-slate-500 text-[10px] uppercase font-bold mt-0.5">{tch.designation}</p>
-                            </div>
-                            <div className="text-xs text-slate-400 pt-1 border-t border-slate-900">
-                              <strong>Subjects:</strong>
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {tch.subjects.map((sub, idx) => (
-                                  <span key={idx} className="bg-slate-900 border border-slate-800 px-2 py-0.5 rounded text-[9px] text-slate-300">
-                                    {sub}
-                                  </span>
-                                ))}
+                      {/* Creative List / Cards */}
+                      <div className="space-y-4">
+                        {[
+                          {
+                            name: "PRATIBHA .R. INGOLE",
+                            role: "DIRECTOR & ACADEMIC HEAD",
+                            subjects: ["ENGLISH", "HINDI", "MARATHI", "SOCIAL SCIENCE", "GK ..."],
+                            color: "from-amber-500/20 to-orange-500/5",
+                            borderColor: "border-amber-500/20",
+                            textColor: "text-amber-400",
+                            badgeColor: "bg-amber-500/10 text-amber-300 border-amber-500/20"
+                          },
+                          {
+                            name: "DNYANESHWAR SAKHARAM INGOLE",
+                            role: "SENIOR FACULTY",
+                            subjects: ["MATHEMATICS"],
+                            color: "from-blue-500/20 to-indigo-500/5",
+                            borderColor: "border-blue-500/20",
+                            textColor: "text-blue-400",
+                            badgeColor: "bg-blue-500/10 text-blue-300 border-blue-500/20"
+                          },
+                          {
+                            name: "MADHAVI .S. PAWAR",
+                            role: "LECTURER",
+                            subjects: ["SCIENCE"],
+                            color: "from-emerald-500/20 to-teal-500/5",
+                            borderColor: "border-emerald-500/20",
+                            textColor: "text-emerald-400",
+                            badgeColor: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20"
+                          }
+                        ].map((teacher, index) => (
+                          <div 
+                            key={index} 
+                            className={`relative overflow-hidden bg-gradient-to-r ${teacher.color} border ${teacher.borderColor} rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-300 hover:scale-[1.01] hover:shadow-lg`}
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-center shrink-0">
+                                <span className="text-sm font-black text-amber-500">{index + 1}</span>
                               </div>
+                              <div>
+                                <h4 className="font-black text-white text-base tracking-wider uppercase">
+                                  {teacher.name}
+                                </h4>
+                                <span className="inline-block text-[9px] tracking-widest text-slate-400 font-bold uppercase mt-0.5 bg-slate-900 px-2 py-0.5 rounded-md border border-slate-800">
+                                  {teacher.role}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Subjects directly in front of them */}
+                            <div className="flex flex-wrap items-center gap-2 md:justify-end max-w-xl">
+                              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mr-1 hidden md:inline">
+                                ASSIGNED SUBJECTS:
+                              </span>
+                              {teacher.subjects.map((subject, idx) => (
+                                <span 
+                                  key={idx} 
+                                  className={`px-3 py-1.5 rounded-lg border text-xs font-black tracking-widest uppercase shadow-sm ${teacher.badgeColor}`}
+                                >
+                                  {subject}
+                                </span>
+                              ))}
                             </div>
                           </div>
                         ))}
+                      </div>
+
+                      {/* DETAILED UPPERCASE TABLE WITHOUT WORKLOAD GRAPHS */}
+                      <div className="pt-2">
+                        <div className="overflow-x-auto rounded-xl border border-slate-800">
+                          <table className="w-full text-left border-collapse bg-slate-950">
+                            <thead>
+                              <tr className="bg-slate-900/80 border-b border-slate-800 text-[10px] tracking-wider text-slate-400 font-bold">
+                                <th className="p-4 uppercase">FACULTY MEMBER NAME</th>
+                                <th className="p-4 uppercase">CORE SUBJECT EXPERTISE</th>
+                                <th className="p-4 uppercase text-right">CREDENTIAL LEVEL</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-800/60 text-xs font-mono text-slate-300">
+                              <tr className="hover:bg-slate-900/30 transition-colors">
+                                <td className="p-4 font-sans font-black text-white uppercase tracking-wider">PRATIBHA .R. INGOLE</td>
+                                <td className="p-4 text-amber-500 font-extrabold uppercase tracking-widest">ENGLISH, HINDI, MARATHI, SOCIAL SCIENCE, GK ...</td>
+                                <td className="p-4 text-right font-bold text-slate-400 uppercase tracking-widest">FOUNDING DIRECTOR</td>
+                              </tr>
+                              <tr className="hover:bg-slate-900/30 transition-colors">
+                                <td className="p-4 font-sans font-black text-white uppercase tracking-wider">DNYANESHWAR SAKHARAM INGOLE</td>
+                                <td className="p-4 text-amber-400 font-extrabold uppercase tracking-widest">MATHEMATICS</td>
+                                <td className="p-4 text-right font-bold text-slate-400 uppercase tracking-widest">SENIOR DEPT HEAD</td>
+                              </tr>
+                              <tr className="hover:bg-slate-900/30 transition-colors">
+                                <td className="p-4 font-sans font-black text-white uppercase tracking-wider">MADHAVI .S. PAWAR</td>
+                                <td className="p-4 text-emerald-400 font-extrabold uppercase tracking-widest">SCIENCE</td>
+                                <td className="p-4 text-right font-bold text-slate-400 uppercase tracking-widest">PROFESSIONAL LECTURER</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     </div>
 
