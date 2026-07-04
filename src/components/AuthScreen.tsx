@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   Lock, Unlock, ShieldCheck, BookOpen, GraduationCap, Users, 
   Mail, Chrome, ArrowRight, CheckCircle2, Sparkles, 
-  MessageCircle, Info, Search, HelpCircle, Phone, Globe 
+  MessageCircle, Info, Search, HelpCircle, Phone, Globe, Trash2, Plus, ChevronRight
 } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 import logoImage from "../assets/images/academy_logo_1782839442092.jpg";
@@ -34,6 +34,42 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
   const [password, setPassword] = useState("");
   const [isGoogleSigning, setIsGoogleSigning] = useState(false);
   const [showGoogleChooser, setShowGoogleChooser] = useState(false);
+  const [googleEmail, setGoogleEmail] = useState("");
+  const [showAddAccountForm, setShowAddAccountForm] = useState(false);
+
+  // Google accounts saved on this device to protect privacy
+  const [deviceAccounts, setDeviceAccounts] = useState<{name: string, email: string}[]>(() => {
+    try {
+      const saved = localStorage.getItem("samarth_academy_device_accounts");
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const saveAccountToDevice = (name: string, email: string) => {
+    try {
+      const saved = localStorage.getItem("samarth_academy_device_accounts");
+      const list = saved ? JSON.parse(saved) : [];
+      if (!list.some((acc: any) => acc.email.toLowerCase() === email.toLowerCase())) {
+        list.push({ name, email });
+        localStorage.setItem("samarth_academy_device_accounts", JSON.stringify(list));
+        setDeviceAccounts(list);
+      }
+    } catch (e) {
+      console.warn("localStorage error:", e);
+    }
+  };
+
+  const removeDeviceAccount = (email: string) => {
+    try {
+      const filtered = deviceAccounts.filter((acc) => acc.email.toLowerCase() !== email.toLowerCase());
+      localStorage.setItem("samarth_academy_device_accounts", JSON.stringify(filtered));
+      setDeviceAccounts(filtered);
+    } catch (e) {
+      console.warn("localStorage error:", e);
+    }
+  };
 
   // General States
   const [loading, setLoading] = useState(false);
@@ -181,6 +217,10 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
         }
       }
 
+      if (data.user && data.user.email) {
+        saveAccountToDevice(data.user.name, data.user.email);
+      }
+
       setTimeout(() => {
         onLoginSuccess(data.user);
       }, 3500);
@@ -196,6 +236,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
     setErrorMsg(null);
     setTimeout(() => {
       setShowGoogleChooser(true);
+      setShowAddAccountForm(deviceAccounts.length === 0);
     }, 1000);
   };
 
@@ -242,6 +283,10 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
         } catch (speechErr) {
           console.warn("Speech synthesis error:", speechErr);
         }
+      }
+
+      if (data.user && data.user.email) {
+        saveAccountToDevice(data.user.name, data.user.email);
       }
 
       setTimeout(() => {
@@ -607,44 +652,127 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
-                      className="bg-white text-slate-900 rounded-2xl p-4 border border-slate-200 shadow-xl space-y-3"
+                      className="bg-white text-slate-900 rounded-2xl p-5 border border-slate-200 shadow-xl space-y-3.5"
                     >
                       <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">{t("auth.google_chooser")}</span>
-                        <button onClick={() => setShowGoogleChooser(false)} className="text-slate-400 hover:text-slate-900 font-bold">✕</button>
+                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider flex items-center gap-1">
+                          <Chrome className="w-3.5 h-3.5 text-red-500" />
+                          {language === "marathi" ? "Google द्वारे सुरक्षित लॉगिन" : language === "hindi" ? "Google द्वारा सुरक्षित लॉगिन" : "Secure Login via Google"}
+                        </span>
+                        <button onClick={() => setShowGoogleChooser(false)} className="text-slate-400 hover:text-slate-900 font-bold text-sm">✕</button>
                       </div>
-                      <div className="space-y-1.5 text-xs">
-                        <button
-                          onClick={() => selectGoogleAccount("samarthacademy515@gmail.com")}
-                          className="w-full text-left p-2 hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 flex items-center gap-2 font-semibold text-slate-800"
-                        >
-                          <div className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-[10px]">SA</div>
-                          <div>
-                            <p className="leading-tight">Samarth Academy</p>
-                            <p className="text-[10px] text-slate-400">samarthacademy515@gmail.com</p>
+
+                      {!showAddAccountForm && deviceAccounts.length > 0 ? (
+                        <div className="space-y-3">
+                          <p className="text-[11px] text-slate-500 leading-normal font-medium">
+                            {language === "marathi" 
+                              ? "तुमच्या डिव्हाइसवर जोडलेली खाती निवडा:" 
+                              : language === "hindi" 
+                              ? "अपने डिवाइस पर जुड़े खाते चुनें:" 
+                              : "Select an account active on this device:"}
+                          </p>
+
+                          <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                            {deviceAccounts.map((acc, index) => {
+                              const initial = acc.name ? acc.name.charAt(0).toUpperCase() : "U";
+                              return (
+                                <div
+                                  key={acc.email}
+                                  onClick={() => selectGoogleAccount(acc.email)}
+                                  className="w-full text-left p-2.5 hover:bg-slate-50 rounded-xl border border-slate-100 hover:border-slate-300 flex items-center justify-between font-semibold text-slate-850 cursor-pointer transition-all group"
+                                >
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center font-bold text-xs uppercase group-hover:bg-amber-500 group-hover:text-white group-hover:border-transparent transition-colors">
+                                      {initial}
+                                    </div>
+                                    <div className="truncate max-w-[160px] sm:max-w-[200px]">
+                                      <p className="leading-tight text-xs text-slate-800">{acc.name}</p>
+                                      <p className="text-[10px] text-slate-400 font-normal truncate">{acc.email}</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-amber-500 transition-colors" />
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (confirm(language === "marathi" ? "हे खाते या डिव्हाइसवरून काढायचे?" : "Remove this account from this device?")) {
+                                          removeDeviceAccount(acc.email);
+                                        }
+                                      }}
+                                      className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                      title="Remove from device"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
-                        </button>
-                        <button
-                          onClick={() => selectGoogleAccount("pratibha.ingole@gmail.com")}
-                          className="w-full text-left p-2 hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 flex items-center gap-2 font-semibold text-slate-800"
-                        >
-                          <div className="w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-[10px]">PI</div>
-                          <div>
-                            <p className="leading-tight">Pratibha R. Ingole</p>
-                            <p className="text-[10px] text-slate-400">pratibha.ingole@gmail.com</p>
-                          </div>
-                        </button>
-                        <button
-                          onClick={() => {
-                            const promptMsg = language === "marathi" ? "आपला दुसरा Google ईमेल पत्ता टाका (Enter alternate Gmail):" : language === "hindi" ? "अपना दूसरा Google ईमेल पता दर्ज करें (Enter alternate Gmail):" : "Enter alternate Google Gmail address:";
-                            const customEmail = prompt(promptMsg, "student.samarth@gmail.com");
-                            if (customEmail) selectGoogleAccount(customEmail);
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setGoogleEmail("");
+                              setShowAddAccountForm(true);
+                            }}
+                            className="w-full text-center py-2 hover:bg-slate-50 rounded-xl text-amber-600 font-bold text-[11px] border border-dashed border-amber-200 transition-colors flex items-center justify-center gap-1 cursor-pointer mt-1"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            {language === "marathi" ? "दुसरे खाते वापरा" : language === "hindi" ? "दूसरा खाता जोड़ें" : "Use another account"}
+                          </button>
+                        </div>
+                      ) : (
+                        <form 
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            if (googleEmail.trim()) {
+                              selectGoogleAccount(googleEmail.trim());
+                            }
                           }}
-                          className="w-full text-center py-2 hover:bg-slate-50 rounded-lg text-amber-600 font-bold text-[11px] border border-dashed border-amber-200"
+                          className="space-y-3.5 text-xs"
                         >
-                          {t("auth.google_another")}
-                        </button>
-                      </div>
+                          <p className="text-[11px] text-slate-500 leading-normal">
+                            {language === "marathi" 
+                              ? "आपल्या फोन/डिव्हाइसवर सुरू असलेले Google (Gmail) खाते येथे टाका:" 
+                              : language === "hindi" 
+                              ? "अपने फोन/डिवाइस पर सक्रिय Google (Gmail) खाता यहाँ दर्ज करें:" 
+                              : "Enter the Google (Gmail) account active on your phone/device to proceed:"}
+                          </p>
+                          
+                          <div className="space-y-1">
+                            <input
+                              type="email"
+                              required
+                              placeholder="yourname@gmail.com"
+                              value={googleEmail}
+                              onChange={(e) => setGoogleEmail(e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold focus:outline-none focus:border-amber-500 focus:bg-white transition-all placeholder-slate-400 font-mono"
+                            />
+                          </div>
+
+                          <div className="flex flex-col gap-2 pt-1">
+                            <button
+                              type="submit"
+                              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2 px-4 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs"
+                            >
+                              <Unlock className="w-3.5 h-3.5 text-amber-400" />
+                              {language === "marathi" ? "लॉगिन करा" : language === "hindi" ? "लॉगिन करें" : "Sign In & Continue"}
+                            </button>
+
+                            {deviceAccounts.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setShowAddAccountForm(false)}
+                                className="text-center text-[10px] text-slate-500 hover:text-slate-800 underline font-semibold py-1 cursor-pointer transition-all"
+                              >
+                                {language === "marathi" ? "← जतन केलेल्या खात्यांवर परत जा" : language === "hindi" ? "← सहेजे गए खातों पर वापस जाएं" : "← Back to saved accounts on this device"}
+                              </button>
+                            )}
+                          </div>
+                        </form>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
