@@ -159,135 +159,13 @@ const DEFAULT_ASSIGNMENTS = [
   }
 ];
 
-const DEFAULT_LIVE_CLASSES = [
-  {
-    id: "LC-101",
-    subject: "Mathematics",
-    teacher: "DNYANESHWAR SAKHARAM INGOLE",
-    class: "10th Standard",
-    section: "School Section",
-    description: "Learn quadratic equation short formulas and factorizations.",
-    meetingTitle: "Quadratic Equations Mastery Class",
-    startDate: "2026-07-04",
-    startTime: "10:00",
-    duration: 60,
-    meetingRoom: "SamarthClass_Maths_101",
-    createdBy: "DNYANESHWAR SAKHARAM INGOLE",
-    status: "scheduled",
-    password: "123",
-    allowRecording: true,
-    allowChat: true,
-    allowRaiseHand: true,
-    allowWaitingRoom: false,
-    allowParentJoin: true,
-    createdAt: "2026-07-01T10:00:00.000Z"
-  },
-  {
-    id: "LC-102",
-    subject: "Science",
-    teacher: "MADHAVI .S. PAWAR",
-    class: "MPSC Group B",
-    section: "Competitive Exams",
-    description: "Important concepts of Physics & Chemistry.",
-    meetingTitle: "Competitive Science Concepts",
-    startDate: "2026-07-04",
-    startTime: "14:30",
-    duration: 90,
-    meetingRoom: "SamarthClass_Science_102",
-    createdBy: "MADHAVI .S. PAWAR",
-    status: "live",
-    password: "",
-    allowRecording: false,
-    allowChat: true,
-    allowRaiseHand: true,
-    allowWaitingRoom: true,
-    allowParentJoin: true,
-    createdAt: "2026-07-02T12:00:00.000Z"
-  },
-  {
-    id: "LC-103",
-    subject: "Marathi Grammar",
-    teacher: "PRATIBHA .R. INGOLE",
-    class: "Police Bharti",
-    section: "Competitive Exams",
-    description: "Comprehensive analysis of Marathi nouns, verbs and grammar structures.",
-    meetingTitle: "Marathi Grammar Foundation Course",
-    startDate: "2026-07-03",
-    startTime: "09:00",
-    duration: 60,
-    meetingRoom: "SamarthClass_Marathi_103",
-    createdBy: "PRATIBHA .R. INGOLE",
-    status: "completed",
-    password: "",
-    allowRecording: true,
-    allowChat: true,
-    allowRaiseHand: true,
-    allowWaitingRoom: false,
-    allowParentJoin: true,
-    createdAt: "2026-07-03T08:30:00.000Z"
-  }
-];
+const DEFAULT_LIVE_CLASSES: any[] = [];
 
-const DEFAULT_ATTENDANCE = [
-  {
-    id: "ATT-1001",
-    meetingId: "LC-103",
-    studentId: "STU-101",
-    studentName: "Omkar Rajesh Chavan",
-    joinedAt: "2026-07-03T09:02:00.000Z",
-    leftAt: "2026-07-03T10:01:00.000Z",
-    duration: 59,
-    device: "Android Mobile",
-    browser: "Chrome",
-    status: "Present"
-  },
-  {
-    id: "ATT-1002",
-    meetingId: "LC-103",
-    studentId: "STU-102",
-    studentName: "Sneha Sunil Shinde",
-    joinedAt: "2026-07-03T09:05:00.000Z",
-    leftAt: "2026-07-03T09:58:00.000Z",
-    duration: 53,
-    device: "iPhone",
-    browser: "Safari",
-    status: "Present"
-  },
-  {
-    id: "ATT-1003",
-    meetingId: "LC-103",
-    studentId: "STU-104",
-    studentName: "Aditya Ramrao Joshi",
-    joinedAt: "2026-07-03T09:00:00.000Z",
-    leftAt: "2026-07-03T10:00:00.000Z",
-    duration: 60,
-    device: "Windows Desktop",
-    browser: "Chrome",
-    status: "Present"
-  }
-];
+const DEFAULT_ATTENDANCE: any[] = [];
 
-const DEFAULT_MEETING_LOGS = [
-  {
-    id: "MLG-1001",
-    meetingId: "LC-103",
-    meetingRoom: "SamarthClass_Marathi_103",
-    action: "Class ended by Teacher",
-    timestamp: "2026-07-03T10:02:00.000Z"
-  }
-];
+const DEFAULT_MEETING_LOGS: any[] = [];
 
-const DEFAULT_MEETING_RECORDINGS = [
-  {
-    id: "REC-1001",
-    meetingId: "LC-103",
-    subject: "Marathi Grammar",
-    meetingTitle: "Marathi Grammar Foundation Course",
-    recordingUrl: "https://meet.jit.si/SamarthClass_Marathi_103/recording.mp4",
-    duration: "60:00",
-    createdAt: "2026-07-03T10:02:00.000Z"
-  }
-];
+const DEFAULT_MEETING_RECORDINGS: any[] = [];
 
 // Read DB or Initialize
 function readDB() {
@@ -385,6 +263,36 @@ function readDB() {
         location: "Sinchan Nagar, Parbhani, Maharashtra"
       };
       changed = true;
+    }
+
+    // Filter out demo classes
+    if (parsed.liveClasses && Array.isArray(parsed.liveClasses)) {
+      const originalLength = parsed.liveClasses.length;
+      parsed.liveClasses = parsed.liveClasses.filter((c: any) => c.id !== "LC-101" && c.id !== "LC-102" && c.id !== "LC-103");
+      if (parsed.liveClasses.length !== originalLength) {
+        changed = true;
+      }
+    }
+    if (parsed.attendance && Array.isArray(parsed.attendance)) {
+      const originalLength = parsed.attendance.length;
+      parsed.attendance = parsed.attendance.filter((a: any) => a.meetingId !== "LC-101" && a.meetingId !== "LC-102" && a.meetingId !== "LC-103");
+      if (parsed.attendance.length !== originalLength) {
+        changed = true;
+      }
+    }
+    if (parsed.meetingLogs && Array.isArray(parsed.meetingLogs)) {
+      const originalLength = parsed.meetingLogs.length;
+      parsed.meetingLogs = parsed.meetingLogs.filter((l: any) => l.meetingId !== "LC-101" && l.meetingId !== "LC-102" && l.meetingId !== "LC-103");
+      if (parsed.meetingLogs.length !== originalLength) {
+        changed = true;
+      }
+    }
+    if (parsed.meetingRecordings && Array.isArray(parsed.meetingRecordings)) {
+      const originalLength = parsed.meetingRecordings.length;
+      parsed.meetingRecordings = parsed.meetingRecordings.filter((r: any) => r.meetingId !== "LC-101" && r.meetingId !== "LC-102" && r.meetingId !== "LC-103");
+      if (parsed.meetingRecordings.length !== originalLength) {
+        changed = true;
+      }
     }
     
     // Ensure all students have a 7-digit login code

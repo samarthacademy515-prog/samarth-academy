@@ -52,10 +52,10 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     hindi: "डिजिटल पाठ्यक्रम"
   },
   "nav.live": {
-    english: "Live Whiteboard",
-    hinglish: "Live Class Board",
-    marathi: "थेट वर्ग",
-    hindi: "लाइव क्लास"
+    english: "Live Classes",
+    hinglish: "Live Classes",
+    marathi: "थेट वर्ग / Live Classes",
+    hindi: "लाइव क्लासेस"
   },
   "nav.practice": {
     english: "MCQ Practice",
@@ -770,18 +770,18 @@ export const TRANSLATIONS: Record<string, Record<Language, string>> = {
     hindi: "उत्तर सबमिट करें"
   },
 
-  // Live Whiteboard
+  // Live Classes
   "live.title": {
-    english: "Live Virtual Smart Classroom",
-    hinglish: "Live Whiteboard Class & Interactive Chat",
+    english: "Live Virtual Classes",
+    hinglish: "Live Class & Interactive Chat",
     marathi: "थेट डिजिटल आभासी वर्ग",
     hindi: "लाइव डिजिटल वर्चुअल क्लास"
   },
   "live.sub": {
-    english: "Interactive real-time whiteboard for live explanation with multi-student chatting desk.",
-    hinglish: "Sath me milkar likhne aur doubt discuss karne ke liye live screen board.",
-    marathi: "थेट स्पष्टीकरणासाठी संवादात्मक डिजिटल फलक आणि विद्यार्थी शंका निरसन मंच.",
-    hindi: "लाइव शिक्षण के लिए इंटरैक्टिव डिजिटल बोर्ड और छात्र शंका समाधान डेस्क।"
+    english: "Interactive real-time classes for live explanation with multi-student chatting desk.",
+    hinglish: "Sath me classes aur doubt discuss karne ke liye live screen dashboard.",
+    marathi: "थेट स्पष्टीकरणासाठी संवादात्मक वर्ग आणि विद्यार्थी शंका निरसन मंच.",
+    hindi: "लाइव शिक्षण और छात्र शंका समाधान डेस्क।"
   },
   "live.status": {
     english: "Class Live Stream Sync Active",
