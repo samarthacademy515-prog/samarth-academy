@@ -11,7 +11,37 @@ interface ERPManagementProps {
 }
 
 export default function ERPManagement({ students, feeLogs, onRefreshData }: ERPManagementProps) {
-  const [activeTab, setActiveTab] = useState<"directory" | "attendance" | "fees" | "reports">("directory");
+  const [activeTab, setActiveTab] = useState<"directory" | "attendance" | "fees" | "reports" | "logins">("directory");
+  const [loginHistory, setLoginHistory] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const fetchLoginHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const response = await fetch(`${API}/api/login-history`);
+      if (response.ok) {
+        const data = await response.json();
+        setLoginHistory(data);
+      }
+    } catch (err) {
+      console.error("Error fetching login history:", err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const handleClearLoginHistory = async () => {
+    if (!window.confirm("Are you sure you want to clear all login history records?")) return;
+    try {
+      const response = await fetch(`${API}/api/login-history/clear`, { method: "POST" });
+      if (response.ok) {
+        setLoginHistory([]);
+        alert("Login history cleared successfully.");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
   
   // Search & Filter state for Directory
   const [searchQuery, setSearchQuery] = useState("");
@@ -39,7 +69,7 @@ export default function ERPManagement({ students, feeLogs, onRefreshData }: ERPM
   const handleDeleteStudent = async (id: string) => {
     if (!window.confirm("Are you sure you want to remove this student? This action cannot be undone.")) return;
     try {
-      const response = await fetch(`/api/students/${id}`, { method: "DELETE" });
+      const response = await fetch(`${API}/api/students/${id}`, { method: "DELETE" });
       if (response.ok) {
         onRefreshData();
         alert("Student removed successfully.");
@@ -190,6 +220,14 @@ export default function ERPManagement({ students, feeLogs, onRefreshData }: ERPM
             }`}
           >
             <BookOpen className="w-3.5 h-3.5" /> आर्थिक अहवाल (Financials)
+          </button>
+          <button
+            onClick={() => { setActiveTab("logins"); fetchLoginHistory(); }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              activeTab === "logins" ? "bg-amber-500 text-slate-950" : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <UserCheck className="w-3.5 h-3.5 text-amber-400" /> लॉगिन ट्रॅकर (Logins)
           </button>
         </div>
       </div>
@@ -649,6 +687,126 @@ export default function ERPManagement({ students, feeLogs, onRefreshData }: ERPM
                     </div>
                   ))
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* --- 5. LOGINS & ROSTER MONITOR --- */}
+        {activeTab === "logins" && (
+          <div className="space-y-6" id="erp-logins-panel">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-950 p-4 border border-slate-800 rounded-xl">
+              <div>
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <UserCheck className="w-4 h-4 text-amber-500" />
+                  लॉगिन ट्रॅकर व अकॅडमी विद्यार्थी (Realtime Logins & Saved Roster)
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Monitor when students log into Samarth Academy via Code, Google or Email. Details are stored permanently on the server.
+                </p>
+              </div>
+              <button
+                onClick={handleClearLoginHistory}
+                className="bg-red-950 hover:bg-red-900 text-red-300 border border-red-800/50 hover:border-red-500 text-[11px] font-bold py-1.5 px-3 rounded-lg cursor-pointer transition-colors shrink-0"
+              >
+                Clear History Logs
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left Column: Realtime Login History */}
+              <div className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden flex flex-col">
+                <div className="p-3 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-xs">
+                  <span className="text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
+                    थेट लॉगिन प्रविष्ट्या (Live Login History Logs)
+                  </span>
+                  <button
+                    onClick={fetchLoginHistory}
+                    className="text-[10px] text-slate-400 hover:text-white font-bold underline"
+                    disabled={historyLoading}
+                  >
+                    {historyLoading ? "Refreshing..." : "🔄 Refresh"}
+                  </button>
+                </div>
+
+                <div className="p-4 flex-1 space-y-2 max-h-[480px] overflow-y-auto">
+                  {loginHistory.length === 0 ? (
+                    <div className="py-12 text-center text-slate-500 text-xs">
+                      No student login activity recorded yet. Student logins will automatically save here.
+                    </div>
+                  ) : (
+                    loginHistory.map((log: any) => {
+                      const dateObj = new Date(log.timestamp);
+                      const displayTime = dateObj.toLocaleDateString() + " " + dateObj.toLocaleTimeString();
+                      return (
+                        <div key={log.id} className="p-3 bg-slate-900/50 border border-slate-800/60 rounded-xl flex items-center justify-between hover:bg-slate-900 transition-colors">
+                          <div className="space-y-1">
+                            <p className="text-xs font-bold text-white flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                              {log.studentName}
+                            </p>
+                            <p className="text-[10px] text-slate-400 font-mono">
+                              Student ID: <span className="text-red-400 font-bold">{log.studentId}</span> • Role: <span className="uppercase text-slate-500 font-black">{log.role}</span>
+                            </p>
+                          </div>
+                          <div className="text-right space-y-1">
+                            <span className="text-[9px] bg-slate-800 border border-slate-700 text-slate-300 px-2 py-0.5 rounded font-black uppercase">
+                              {log.method === "google" ? "🌐 Google" : log.method === "email" ? "✉️ Email" : "🔑 Code"}
+                            </span>
+                            <p className="text-[9px] text-slate-500 font-mono flex items-center justify-end gap-1">
+                              <span className="w-2 h-2 border border-slate-700 rounded-full shrink-0 animate-pulse bg-emerald-500/20"></span>
+                              {displayTime}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              {/* Right Column: Permanent Registered Students List */}
+              <div className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden flex flex-col">
+                <div className="p-3 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-xs">
+                  <span className="text-slate-300 font-bold uppercase tracking-wider">
+                    अकॅडमीतील एकूण विद्यार्थी (Saved Academic Roster)
+                  </span>
+                  <span className="text-[10px] bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono px-2 py-0.5 rounded font-bold">
+                    {totalStudents} Active Students
+                  </span>
+                </div>
+
+                <div className="p-4 flex-1 space-y-2.5 max-h-[480px] overflow-y-auto">
+                  {students.length === 0 ? (
+                    <div className="py-12 text-center text-slate-500 text-xs">
+                      No students admitted yet. Register students via Roster or Admission Form.
+                    </div>
+                  ) : (
+                    students.map((stu) => (
+                      <div key={stu.id} className="p-3 bg-slate-900/40 border border-slate-850 rounded-xl flex items-center justify-between hover:border-slate-700 transition-all">
+                        <div className="space-y-1">
+                          <p className="text-xs font-bold text-white">{stu.name}</p>
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-slate-500">
+                            <span className="font-mono text-red-400 font-bold">{stu.id}</span>
+                            <span>•</span>
+                            <span>Std: <span className="text-amber-500 font-semibold">{stu.standard}</span></span>
+                            <span>•</span>
+                            <span>Phone: <span className="font-mono text-slate-400">{stu.phone || "N/A"}</span></span>
+                          </div>
+                        </div>
+                        <div className="text-right space-y-1 font-mono">
+                          <span className="text-[10px] text-emerald-400 font-bold block">
+                            Paid: ₹{stu.paidFees}
+                          </span>
+                          <span className="text-[9px] bg-slate-800 border border-slate-750 text-slate-400 py-0.5 px-2 rounded block text-center">
+                            Code: {stu.loginCode}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </div>

@@ -99,10 +99,24 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
         throw new Error(data.error || t("auth.login_failed"));
       }
 
-      setSuccessMsg(`${t("auth.login_success_welcome")}${data.user.name}`);
+      const welcomeText = `${t("auth.login_success_welcome")}${data.user.name}`;
+      setSuccessMsg(welcomeText);
+
+      // Auto say credentials and welcome message out loud
+      if ("speechSynthesis" in window) {
+        try {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(`Welcome back, ${data.user.name}. Access granted.`);
+          utterance.rate = 1.0;
+          window.speechSynthesis.speak(utterance);
+        } catch (speechErr) {
+          console.warn("Speech synthesis error:", speechErr);
+        }
+      }
+
       setTimeout(() => {
         onLoginSuccess(data.user);
-      }, 1200);
+      }, 1500);
 
     } catch (err: any) {
       setErrorMsg(err.message || "Something went wrong.");
@@ -146,14 +160,30 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
         throw new Error(t("auth.invalid_server_resp"));
       }
 
-      setSuccessMsg(t("auth.email_created"));
+      if (data.success === false) {
+        throw new Error(data.error || "Email registration failed.");
+      }
+
+      const confirmMsg = `Welcome ${data.user.name}! Registered Permanently! Student ID: ${data.user.studentId}, Login Code: ${data.user.loginCode}`;
+      setSuccessMsg(confirmMsg);
+
+      // Auto say permanent registration details and credentials
+      if ("speechSynthesis" in window) {
+        try {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(
+            `Welcome to Samarth Academy, ${data.user.name}! Your permanent student ID is ${data.user.studentId}, and your seven digit login code is ${data.user.loginCode}. It is saved permanently. Please write it down.`
+          );
+          utterance.rate = 0.9;
+          window.speechSynthesis.speak(utterance);
+        } catch (speechErr) {
+          console.warn("Speech synthesis error:", speechErr);
+        }
+      }
+
       setTimeout(() => {
-        onLoginSuccess({
-          role: "guest",
-          name: email.split("@")[0],
-          email: email.trim()
-        });
-      }, 1200);
+        onLoginSuccess(data.user);
+      }, 3500);
     } catch (err: any) {
       setErrorMsg(err.message || "ईमेल साइन अप अयशस्वी.");
     } finally {
@@ -169,17 +199,61 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
     }, 1000);
   };
 
-  const selectGoogleAccount = (gmail: string) => {
+  const selectGoogleAccount = async (gmail: string) => {
     setShowGoogleChooser(false);
-    setSuccessMsg(`Google खात्याद्वारे (${gmail}) यशस्वीरित्या लॉगिन झाले!`);
-    setTimeout(() => {
-      onLoginSuccess({
-        role: "guest",
-        name: gmail.split("@")[0],
-        email: gmail
+    setLoading(true);
+    setErrorMsg(null);
+    
+    try {
+      const response = await fetch(`${API}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          loginType: "google",
+          email: gmail
+        })
       });
+
+      let data: any = {};
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error("Invalid server response format.");
+      }
+
+      if (data.success === false) {
+        throw new Error(data.error || "Google login failed on backend.");
+      }
+
+      const confirmMsg = `Google Login Success! Student ID: ${data.user.studentId}, Login Code: ${data.user.loginCode}`;
+      setSuccessMsg(confirmMsg);
+
+      // Auto say permanent registration details and credentials
+      if ("speechSynthesis" in window) {
+        try {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(
+            `Welcome to Samarth Academy, ${data.user.name}! Your permanent student ID is ${data.user.studentId}, and your seven digit login code is ${data.user.loginCode}. It is saved permanently. Please write it down.`
+          );
+          utterance.rate = 0.9;
+          window.speechSynthesis.speak(utterance);
+        } catch (speechErr) {
+          console.warn("Speech synthesis error:", speechErr);
+        }
+      }
+
+      setTimeout(() => {
+        onLoginSuccess(data.user);
+        setIsGoogleSigning(false);
+      }, 3500);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Google लॉगिन अयशस्वी.");
       setIsGoogleSigning(false);
-    }, 1200);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const searchStudentCode = async () => {

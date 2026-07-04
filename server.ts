@@ -54,110 +54,11 @@ function getGeminiClient() {
 }
 
 // Default Seed Data
-const DEFAULT_STUDENTS = [
-  {
-    id: "STU-101",
-    name: "Omkar Rajesh Chavan",
-    standard: "10th Standard",
-    section: "School Section",
-    parentName: "Rajesh Chavan",
-    phone: "9876543210",
-    address: "Sinchan Nagar, Parbhani",
-    admissionDate: "2026-06-01",
-    totalFees: 15000,
-    paidFees: 10000,
-    attendance: { "2026-06-25": "Present", "2026-06-26": "Present", "2026-06-29": "Present", "2026-06-30": "Present" }
-  },
-  {
-    id: "STU-102",
-    name: "Sneha Sunil Shinde",
-    standard: "MPSC Group B",
-    section: "Competitive Exams",
-    parentName: "Sunil Shinde",
-    phone: "9012345678",
-    address: "Kalyan Nagar, Parbhani",
-    admissionDate: "2026-05-15",
-    totalFees: 22000,
-    paidFees: 15000,
-    attendance: { "2026-06-25": "Present", "2026-06-26": "Present", "2026-06-29": "Absent", "2026-06-30": "Present" }
-  },
-  {
-    id: "STU-103",
-    name: "Pratiksha Madhavrao Kale",
-    standard: "Navodaya",
-    section: "Competitive Exams",
-    parentName: "Madhavrao Kale",
-    phone: "9511668617",
-    address: "Vasundhara Colony, Parbhani",
-    admissionDate: "2026-06-10",
-    totalFees: 12000,
-    paidFees: 12000,
-    attendance: { "2026-06-25": "Present", "2026-06-26": "Present", "2026-06-29": "Present", "2026-06-30": "Present" }
-  },
-  {
-    id: "STU-104",
-    name: "Aditya Ramrao Joshi",
-    standard: "8th Standard",
-    section: "School Section",
-    parentName: "Ramrao Joshi",
-    phone: "8888777766",
-    address: "Sinchan Nagar, Parbhani",
-    admissionDate: "2026-06-05",
-    totalFees: 10000,
-    paidFees: 4000,
-    attendance: { "2026-06-25": "Absent", "2026-06-26": "Present", "2026-06-29": "Present", "2026-06-30": "Absent" }
-  },
-  {
-    id: "STU-105",
-    name: "Rohan Vinayak Patil",
-    standard: "Police Bharti",
-    section: "Competitive Exams",
-    parentName: "Vinayak Patil",
-    phone: "7777666655",
-    address: "Subhash Road, Parbhani",
-    admissionDate: "2026-04-20",
-    totalFees: 18000,
-    paidFees: 18000,
-    attendance: { "2026-06-25": "Present", "2026-06-26": "Present", "2026-06-29": "Present", "2026-06-30": "Present" }
-  }
-];
+const DEFAULT_STUDENTS: any[] = [];
 
-const DEFAULT_FEE_LOGS = [
-  { id: "PAY-1001", studentId: "STU-101", studentName: "Omkar Rajesh Chavan", amount: 10000, date: "2026-06-02", mode: "Cash", receivedBy: "Pratibha R. Ingole" },
-  { id: "PAY-1002", studentId: "STU-102", studentName: "Sneha Sunil Shinde", amount: 15000, date: "2026-05-16", mode: "PhonePe", receivedBy: "Pratibha R. Ingole" },
-  { id: "PAY-1003", studentId: "STU-103", studentName: "Pratiksha Madhavrao Kale", amount: 12000, date: "2026-06-11", mode: "Google Pay", receivedBy: "Pratibha R. Ingole" },
-  { id: "PAY-1004", studentId: "STU-104", studentName: "Aditya Ramrao Joshi", amount: 4000, date: "2026-06-06", mode: "Cash", receivedBy: "Pratibha R. Ingole" },
-  { id: "PAY-1005", studentId: "STU-105", studentName: "Rohan Vinayak Patil", amount: 18000, date: "2026-04-21", mode: "UPI", receivedBy: "Pratibha R. Ingole" }
-];
+const DEFAULT_FEE_LOGS: any[] = [];
 
-const DEFAULT_ASSIGNMENTS = [
-  {
-    id: "ASM-201",
-    title: "MPSC History: Chhatrapati Shivaji Maharaj Era",
-    standard: "MPSC Group B",
-    description: "Write an essay on the administrative structure and military tactics of Chhatrapati Shivaji Maharaj.",
-    dueDate: "2026-07-05",
-    submissions: [
-      { studentId: "STU-102", studentName: "Sneha Sunil Shinde", content: "Chhatrapati Shivaji Maharaj pioneered Guerilla warfare (Ganimi Kava). His cabinet was called Ashtapradhan Mandal...", status: "Graded", grade: "A+", feedback: "Excellent detail on Ashtapradhan Mandal!" }
-    ]
-  },
-  {
-    id: "ASM-202",
-    title: "10th Maths: Quadratic Equations Set-1",
-    standard: "10th Standard",
-    description: "Solve the quadratic equations on page 42 of the textbook. Show all factorization steps.",
-    dueDate: "2026-07-03",
-    submissions: []
-  },
-  {
-    id: "ASM-203",
-    title: "NMMS Practice: Mental Ability Test (MAT)",
-    standard: "NMMS",
-    description: "Complete the practice set on number series and alphabetical relationships. Total 15 questions.",
-    dueDate: "2026-07-07",
-    submissions: []
-  }
-];
+const DEFAULT_ASSIGNMENTS: any[] = [];
 
 const DEFAULT_LIVE_CLASSES: any[] = [];
 
@@ -294,6 +195,30 @@ function readDB() {
         changed = true;
       }
     }
+
+    // Filter out demo students
+    const demoStudentIds = ["STU-101", "STU-102", "STU-103", "STU-104", "STU-105"];
+    if (parsed.students && Array.isArray(parsed.students)) {
+      const originalLength = parsed.students.length;
+      parsed.students = parsed.students.filter((s: any) => !demoStudentIds.includes(s.id));
+      if (parsed.students.length !== originalLength) {
+        changed = true;
+      }
+    }
+    if (parsed.feeLogs && Array.isArray(parsed.feeLogs)) {
+      const originalLength = parsed.feeLogs.length;
+      parsed.feeLogs = parsed.feeLogs.filter((f: any) => !demoStudentIds.includes(f.studentId));
+      if (parsed.feeLogs.length !== originalLength) {
+        changed = true;
+      }
+    }
+    if (parsed.assignments && Array.isArray(parsed.assignments)) {
+      const originalLength = parsed.assignments.length;
+      parsed.assignments = parsed.assignments.filter((a: any) => a.id !== "ASM-201" && a.id !== "ASM-202" && a.id !== "ASM-203");
+      if (parsed.assignments.length !== originalLength) {
+        changed = true;
+      }
+    }
     
     // Ensure all students have a 7-digit login code
     parsed.students = parsed.students.map((student: any) => {
@@ -342,6 +267,20 @@ app.get("/api/whatsapp-logs", (req, res) => {
   res.json(db.whatsappLogs || []);
 });
 
+// Get student login history
+app.get("/api/login-history", (req, res) => {
+  const db = readDB();
+  res.json(db.loginHistory || []);
+});
+
+// Clear login history
+app.post("/api/login-history/clear", (req, res) => {
+  const db = readDB();
+  db.loginHistory = [];
+  writeDB(db);
+  res.json({ success: true, message: "Login history cleared" });
+});
+
 // Auth Login API
 app.post("/api/auth/login", (req, res) => {
   try {
@@ -352,13 +291,56 @@ app.post("/api/auth/login", (req, res) => {
 
     if (loginType === "google" || loginType === "email") {
       // New User Sign Up / Login via Google or Email
+      const emailVal = email?.trim().toLowerCase() || "google-user@gmail.com";
+      let student = (db.students || []).find((s: any) => s.email?.trim().toLowerCase() === emailVal);
+      let isNewUser = false;
+      
+      if (!student) {
+        isNewUser = true;
+        const code = Math.floor(1000000 + Math.random() * 9000000).toString();
+        const studentName = emailVal.split("@")[0];
+        const formattedName = studentName.split(/[\._\-]/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+        student = {
+          id: `STU-${Math.floor(100 + Math.random() * 900)}`,
+          name: formattedName,
+          email: emailVal,
+          phone: "9511668617", // Default placeholder
+          loginCode: code,
+          standard: "10th Standard",
+          section: "School Section",
+          parentName: "Self Registered",
+          address: "Parbhani",
+          totalFees: 15000,
+          paidFees: 0,
+          attendance: {},
+          admissionDate: new Date().toISOString().split("T")[0]
+        };
+        db.students.push(student);
+      }
+
+      // Add to login history
+      db.loginHistory = db.loginHistory || [];
+      db.loginHistory.unshift({
+        id: `LH-${Math.floor(1000 + Math.random() * 9000)}`,
+        studentId: student.id,
+        studentName: student.name,
+        role: "student",
+        timestamp: new Date().toISOString(),
+        method: loginType
+      });
+
+      writeDB(db);
+
       return res.json({
         success: true,
         user: {
-          role: "student", // default role for self-registers
-          name: email ? email.split("@")[0] : "New User Guest",
-          email: email || "google-user@gmail.com",
-          isNewUser: true
+          role: "student",
+          name: student.name,
+          email: student.email,
+          studentId: student.id,
+          loginCode: student.loginCode,
+          isNewUser: isNewUser,
+          studentDetails: student
         }
       });
     }
@@ -394,6 +376,17 @@ app.post("/api/auth/login", (req, res) => {
     if (role === "student") {
       const student = (db.students || []).find((s: any) => s.loginCode === loginCode);
       if (student) {
+        db.loginHistory = db.loginHistory || [];
+        db.loginHistory.unshift({
+          id: `LH-${Math.floor(1000 + Math.random() * 9000)}`,
+          studentId: student.id,
+          studentName: student.name,
+          role: "student",
+          timestamp: new Date().toISOString(),
+          method: "loginCode"
+        });
+        writeDB(db);
+
         return res.json({
           success: true,
           user: {
@@ -413,6 +406,17 @@ app.post("/api/auth/login", (req, res) => {
       // Parent can login with child's login code or parent phone
       const student = (db.students || []).find((s: any) => s.loginCode === loginCode || s.phone === loginCode);
       if (student) {
+        db.loginHistory = db.loginHistory || [];
+        db.loginHistory.unshift({
+          id: `LH-${Math.floor(1000 + Math.random() * 9000)}`,
+          studentId: student.id,
+          studentName: student.name,
+          role: "parent",
+          timestamp: new Date().toISOString(),
+          method: "loginCode"
+        });
+        writeDB(db);
+
         return res.json({
           success: true,
           user: {
