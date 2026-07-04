@@ -159,6 +159,136 @@ const DEFAULT_ASSIGNMENTS = [
   }
 ];
 
+const DEFAULT_LIVE_CLASSES = [
+  {
+    id: "LC-101",
+    subject: "Mathematics",
+    teacher: "DNYANESHWAR SAKHARAM INGOLE",
+    class: "10th Standard",
+    section: "School Section",
+    description: "Learn quadratic equation short formulas and factorizations.",
+    meetingTitle: "Quadratic Equations Mastery Class",
+    startDate: "2026-07-04",
+    startTime: "10:00",
+    duration: 60,
+    meetingRoom: "SamarthClass_Maths_101",
+    createdBy: "DNYANESHWAR SAKHARAM INGOLE",
+    status: "scheduled",
+    password: "123",
+    allowRecording: true,
+    allowChat: true,
+    allowRaiseHand: true,
+    allowWaitingRoom: false,
+    allowParentJoin: true,
+    createdAt: "2026-07-01T10:00:00.000Z"
+  },
+  {
+    id: "LC-102",
+    subject: "Science",
+    teacher: "MADHAVI .S. PAWAR",
+    class: "MPSC Group B",
+    section: "Competitive Exams",
+    description: "Important concepts of Physics & Chemistry.",
+    meetingTitle: "Competitive Science Concepts",
+    startDate: "2026-07-04",
+    startTime: "14:30",
+    duration: 90,
+    meetingRoom: "SamarthClass_Science_102",
+    createdBy: "MADHAVI .S. PAWAR",
+    status: "live",
+    password: "",
+    allowRecording: false,
+    allowChat: true,
+    allowRaiseHand: true,
+    allowWaitingRoom: true,
+    allowParentJoin: true,
+    createdAt: "2026-07-02T12:00:00.000Z"
+  },
+  {
+    id: "LC-103",
+    subject: "Marathi Grammar",
+    teacher: "PRATIBHA .R. INGOLE",
+    class: "Police Bharti",
+    section: "Competitive Exams",
+    description: "Comprehensive analysis of Marathi nouns, verbs and grammar structures.",
+    meetingTitle: "Marathi Grammar Foundation Course",
+    startDate: "2026-07-03",
+    startTime: "09:00",
+    duration: 60,
+    meetingRoom: "SamarthClass_Marathi_103",
+    createdBy: "PRATIBHA .R. INGOLE",
+    status: "completed",
+    password: "",
+    allowRecording: true,
+    allowChat: true,
+    allowRaiseHand: true,
+    allowWaitingRoom: false,
+    allowParentJoin: true,
+    createdAt: "2026-07-03T08:30:00.000Z"
+  }
+];
+
+const DEFAULT_ATTENDANCE = [
+  {
+    id: "ATT-1001",
+    meetingId: "LC-103",
+    studentId: "STU-101",
+    studentName: "Omkar Rajesh Chavan",
+    joinedAt: "2026-07-03T09:02:00.000Z",
+    leftAt: "2026-07-03T10:01:00.000Z",
+    duration: 59,
+    device: "Android Mobile",
+    browser: "Chrome",
+    status: "Present"
+  },
+  {
+    id: "ATT-1002",
+    meetingId: "LC-103",
+    studentId: "STU-102",
+    studentName: "Sneha Sunil Shinde",
+    joinedAt: "2026-07-03T09:05:00.000Z",
+    leftAt: "2026-07-03T09:58:00.000Z",
+    duration: 53,
+    device: "iPhone",
+    browser: "Safari",
+    status: "Present"
+  },
+  {
+    id: "ATT-1003",
+    meetingId: "LC-103",
+    studentId: "STU-104",
+    studentName: "Aditya Ramrao Joshi",
+    joinedAt: "2026-07-03T09:00:00.000Z",
+    leftAt: "2026-07-03T10:00:00.000Z",
+    duration: 60,
+    device: "Windows Desktop",
+    browser: "Chrome",
+    status: "Present"
+  }
+];
+
+const DEFAULT_MEETING_LOGS = [
+  {
+    id: "MLG-1001",
+    meetingId: "LC-103",
+    meetingRoom: "SamarthClass_Marathi_103",
+    action: "Class ended by Teacher",
+    timestamp: "2026-07-03T10:02:00.000Z"
+  }
+];
+
+const DEFAULT_MEETING_RECORDINGS = [
+  {
+    id: "REC-1001",
+    meetingId: "LC-103",
+    subject: "Marathi Grammar",
+    meetingTitle: "Marathi Grammar Foundation Course",
+    recordingUrl: "https://meet.jit.si/SamarthClass_Marathi_103/recording.mp4",
+    duration: "60:00",
+    createdAt: "2026-07-03T10:02:00.000Z"
+  }
+];
+
 // Read DB or Initialize
 function readDB() {
   try {
@@ -167,7 +297,13 @@ function readDB() {
         students: DEFAULT_STUDENTS,
         feeLogs: DEFAULT_FEE_LOGS,
         assignments: DEFAULT_ASSIGNMENTS,
+        liveClasses: DEFAULT_LIVE_CLASSES,
+        attendance: DEFAULT_ATTENDANCE,
+        meetingLogs: DEFAULT_MEETING_LOGS,
+        meetingRecordings: DEFAULT_MEETING_RECORDINGS,
         whatsappLogs: [],
+        notifications: [],
+        liveClassHistory: [],
         settings: {
           academyName: "Samarth Academy",
           tagline: "ज्ञान हेच सामर्थ्य",
@@ -205,8 +341,38 @@ function readDB() {
       changed = true;
     }
     
+    if (!parsed.liveClasses || !Array.isArray(parsed.liveClasses)) {
+      parsed.liveClasses = DEFAULT_LIVE_CLASSES;
+      changed = true;
+    }
+    
+    if (!parsed.attendance || !Array.isArray(parsed.attendance)) {
+      parsed.attendance = DEFAULT_ATTENDANCE;
+      changed = true;
+    }
+    
+    if (!parsed.meetingLogs || !Array.isArray(parsed.meetingLogs)) {
+      parsed.meetingLogs = DEFAULT_MEETING_LOGS;
+      changed = true;
+    }
+    
+    if (!parsed.meetingRecordings || !Array.isArray(parsed.meetingRecordings)) {
+      parsed.meetingRecordings = DEFAULT_MEETING_RECORDINGS;
+      changed = true;
+    }
+    
     if (!parsed.whatsappLogs || !Array.isArray(parsed.whatsappLogs)) {
       parsed.whatsappLogs = [];
+      changed = true;
+    }
+
+    if (!parsed.notifications || !Array.isArray(parsed.notifications)) {
+      parsed.notifications = [];
+      changed = true;
+    }
+
+    if (!parsed.liveClassHistory || !Array.isArray(parsed.liveClassHistory)) {
+      parsed.liveClassHistory = [];
       changed = true;
     }
     
@@ -236,7 +402,7 @@ function readDB() {
     return parsed;
   } catch (error) {
     console.error("Error reading database file:", error);
-    return { students: [], feeLogs: [], assignments: [], whatsappLogs: [], settings: {} };
+    return { students: [], feeLogs: [], assignments: [], liveClasses: [], attendance: [], meetingLogs: [], meetingRecordings: [], whatsappLogs: [], settings: {} };
   }
 }
 
@@ -585,6 +751,453 @@ Standard/Exam Level: ${level || "Competitive / School"}
     });
   }
 });
+
+
+// --- LIVE CLASSES MODULE APIS ---
+
+// 1. Get all live classes list
+app.get("/api/live-classes", (req, res) => {
+  try {
+    const db = readDB();
+    res.json(db.liveClasses || []);
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to fetch live classes" });
+  }
+});
+
+// 2. Create a live class
+app.post("/api/live-classes", (req, res) => {
+  try {
+    const db = readDB();
+    const {
+      subject,
+      teacher,
+      class: className,
+      section,
+      description,
+      meetingTitle,
+      startDate,
+      startTime,
+      endTime,
+      duration,
+      meetLink,
+      createdBy
+    } = req.body;
+
+    if (!subject || !teacher || !className || !meetingTitle || !startDate || !startTime || !meetLink) {
+      return res.status(400).json({ error: "Required fields are missing. Make sure to enter Title, Subject, Standard, Batch, Teacher, Date, Start Time, and Google Meet Link." });
+    }
+
+    const classId = "LC-" + Date.now();
+    const parsedDuration = Number(duration) || 60;
+
+    const newClass = {
+      id: classId,
+      subject,
+      teacher,
+      class: className,
+      section: section || "School Section",
+      description: description || "",
+      meetingTitle,
+      startDate,
+      startTime,
+      endTime: endTime || "",
+      duration: parsedDuration,
+      meetLink,
+      meetingRoom: meetLink, // fallback for backwards compatibility
+      createdBy: createdBy || teacher,
+      status: "scheduled",
+      createdAt: new Date().toISOString(),
+      startedTime: null,
+      endedTime: null
+    };
+
+    db.liveClasses = db.liveClasses || [];
+    db.liveClasses.push(newClass);
+
+    // 1. In-app notification inside database
+    db.notifications = db.notifications || [];
+    db.notifications.push({
+      id: "NTF-" + Date.now(),
+      title: "🔴 New Live Class Scheduled",
+      message: `${subject}: "${meetingTitle}" is scheduled by ${teacher} on ${startDate} at ${startTime}.`,
+      class: className,
+      section: section || "School Section",
+      type: "scheduled",
+      classId: classId,
+      createdAt: new Date().toISOString(),
+      readBy: []
+    });
+
+    // 2. WhatsApp logs backup
+    db.whatsappLogs = db.whatsappLogs || [];
+    db.whatsappLogs.push({
+      id: "WAL-" + Date.now(),
+      recipient: `Students of ${className}`,
+      message: `🔴 *नवीन लाईव्ह क्लास शेड्यूल! (New Live Class Scheduled)*\n\nविषय: *${subject}*\nशीर्षक: *${meetingTitle}*\nशिक्षक: *${teacher}*\nवेळ: *${startDate}* रोजी *${startTime}* वाजता.\n\nसामर्थ अकॅडमी ॲपमध्ये जाऊन लाईव्ह क्लास जॉइन करा!`,
+      timestamp: new Date().toISOString(),
+      status: "delivered"
+    });
+
+    writeDB(db);
+    res.status(201).json(newClass);
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to create live class: " + err.message });
+  }
+});
+
+// 3. Update a live class
+app.put("/api/live-classes/:id", (req, res) => {
+  try {
+    const db = readDB();
+    const { id } = req.params;
+    const index = db.liveClasses.findIndex((c: any) => c.id === id);
+
+    if (index === -1) {
+      return res.status(404).json({ error: "Live class not found" });
+    }
+
+    const currentClass = db.liveClasses[index];
+    const updatedClass = {
+      ...currentClass,
+      ...req.body,
+      id: currentClass.id,
+      createdAt: currentClass.createdAt
+    };
+
+    db.liveClasses[index] = updatedClass;
+
+    // 1. In-app notification
+    db.notifications = db.notifications || [];
+    db.notifications.push({
+      id: "NTF-" + Date.now(),
+      title: "🔴 Live Class Schedule Updated",
+      message: `${updatedClass.subject}: "${updatedClass.meetingTitle}" schedule has been updated. New schedule: ${updatedClass.startDate} at ${updatedClass.startTime}.`,
+      class: updatedClass.class,
+      section: updatedClass.section,
+      type: "updated",
+      classId: id,
+      createdAt: new Date().toISOString(),
+      readBy: []
+    });
+
+    // 2. WhatsApp update
+    db.whatsappLogs = db.whatsappLogs || [];
+    db.whatsappLogs.push({
+      id: "WAL-" + Date.now(),
+      recipient: `Students of ${updatedClass.class}`,
+      message: `🔔 *लाईव्ह क्लास शेड्यूल बदलले! (Class Schedule Updated)*\n\nविषय: *${updatedClass.subject}*\nशीर्षक: *${updatedClass.meetingTitle}*\nवेळ: *${updatedClass.startDate}* रोजी *${updatedClass.startTime}* वाजता.`,
+      timestamp: new Date().toISOString(),
+      status: "delivered"
+    });
+
+    writeDB(db);
+    res.json(updatedClass);
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to update live class" });
+  }
+});
+
+// 4. Delete a live class
+app.delete("/api/live-classes/:id", (req, res) => {
+  try {
+    const db = readDB();
+    const { id } = req.params;
+    const index = db.liveClasses.findIndex((c: any) => c.id === id);
+
+    if (index === -1) {
+      return res.status(404).json({ error: "Live class not found" });
+    }
+
+    const deletedClass = db.liveClasses[index];
+    db.liveClasses.splice(index, 1);
+
+    // Cancel notification
+    db.notifications = db.notifications || [];
+    db.notifications.push({
+      id: "NTF-" + Date.now(),
+      title: "⚠️ Live Class Cancelled",
+      message: `${deletedClass.subject}: "${deletedClass.meetingTitle}" class scheduled for ${deletedClass.startDate} has been cancelled.`,
+      class: deletedClass.class,
+      section: deletedClass.section,
+      type: "cancelled",
+      classId: id,
+      createdAt: new Date().toISOString(),
+      readBy: []
+    });
+
+    db.whatsappLogs = db.whatsappLogs || [];
+    db.whatsappLogs.push({
+      id: "WAL-" + Date.now(),
+      recipient: `Students of ${deletedClass.class}`,
+      message: `⚠️ *लाईव्ह क्लास रद्द! (Class Cancelled)*\n\n*${deletedClass.meetingTitle}* हा वर्ग रद्द करण्यात आला आहे.`,
+      timestamp: new Date().toISOString(),
+      status: "delivered"
+    });
+
+    writeDB(db);
+    res.json({ success: true, message: "Live class deleted successfully" });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to delete live class" });
+  }
+});
+
+// 5. Start a live class
+app.post("/api/live-classes/:id/start", (req, res) => {
+  try {
+    const db = readDB();
+    const { id } = req.params;
+    const index = db.liveClasses.findIndex((c: any) => c.id === id);
+
+    if (index === -1) {
+      return res.status(404).json({ error: "Live class not found" });
+    }
+
+    db.liveClasses[index].status = "live";
+    db.liveClasses[index].startedTime = new Date().toISOString();
+
+    // 1. Send app notifications
+    db.notifications = db.notifications || [];
+    db.notifications.push({
+      id: "NTF-" + Date.now(),
+      title: "🔴 Live Class Started",
+      message: `🚀 ${db.liveClasses[index].subject}: "${db.liveClasses[index].meetingTitle}" by ${db.liveClasses[index].teacher} is now LIVE! Join immediately!`,
+      class: db.liveClasses[index].class,
+      section: db.liveClasses[index].section,
+      type: "started",
+      classId: id,
+      createdAt: new Date().toISOString(),
+      readBy: []
+    });
+
+    // 2. WhatsApp alert
+    db.whatsappLogs = db.whatsappLogs || [];
+    db.whatsappLogs.push({
+      id: "WAL-" + Date.now(),
+      recipient: `Students of ${db.liveClasses[index].class}`,
+      message: `🚀 *लाईव्ह क्लास सुरू झाला आहे! (Class is Live)*\n\nविषय: *${db.liveClasses[index].subject}*\nशीर्षक: *${db.liveClasses[index].meetingTitle}*\nशिक्षक: *${db.liveClasses[index].teacher}*\n\nत्वरित ॲपमध्ये जाऊन जॉइन करा!`,
+      timestamp: new Date().toISOString(),
+      status: "delivered"
+    });
+
+    writeDB(db);
+    res.json(db.liveClasses[index]);
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to start live class" });
+  }
+});
+
+// 6. End a live class
+app.post("/api/live-classes/:id/end", (req, res) => {
+  try {
+    const db = readDB();
+    const { id } = req.params;
+    const index = db.liveClasses.findIndex((c: any) => c.id === id);
+
+    if (index === -1) {
+      return res.status(404).json({ error: "Live class not found" });
+    }
+
+    const liveClass = db.liveClasses[index];
+    liveClass.status = "completed";
+    const endedTimeStr = new Date().toISOString();
+    liveClass.endedTime = endedTimeStr;
+
+    // Calculate actual live duration
+    let liveDuration = liveClass.duration;
+    if (liveClass.startedTime) {
+      const diffMs = new Date(endedTimeStr).getTime() - new Date(liveClass.startedTime).getTime();
+      liveDuration = Math.max(1, Math.round(diffMs / 60000));
+    }
+
+    // Auto-complete ongoing attendance join durations
+    db.attendance = db.attendance || [];
+    db.attendance.forEach((att: any) => {
+      if (att.meetingId === id && !att.leftAt) {
+        att.leftAt = endedTimeStr;
+        const diffMs = new Date(endedTimeStr).getTime() - new Date(att.joinedAt).getTime();
+        att.duration = Math.max(1, Math.round(diffMs / 60000));
+        att.status = "Present";
+      }
+    });
+
+    // Gather unique students joined for history
+    const classAttendance = db.attendance.filter((att: any) => att.meetingId === id);
+    const attendanceCount = classAttendance.length;
+    const studentsJoined = classAttendance.map((att: any) => ({
+      studentId: att.studentId,
+      studentName: att.studentName,
+      joinedAt: att.joinedAt
+    }));
+
+    // Record class history
+    db.liveClassHistory = db.liveClassHistory || [];
+    db.liveClassHistory.push({
+      id: "HST-" + Date.now(),
+      classId: id,
+      title: liveClass.meetingTitle,
+      subject: liveClass.subject,
+      teacher: liveClass.teacher,
+      date: liveClass.startDate,
+      meetLink: liveClass.meetLink,
+      duration: liveDuration,
+      attendanceCount,
+      studentsJoined,
+      createdBy: liveClass.createdBy,
+      createdTime: liveClass.createdAt,
+      endedTime: endedTimeStr
+    });
+
+    writeDB(db);
+    res.json(liveClass);
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to end live class" });
+  }
+});
+
+// 7. Get attendance for a specific meeting
+app.get("/api/live-classes/:id/attendance", (req, res) => {
+  try {
+    const db = readDB();
+    const { id } = req.params;
+    const list = (db.attendance || []).filter((a: any) => a.meetingId === id);
+    res.json(list);
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to fetch attendance" });
+  }
+});
+
+// 8. Join a live class (marks attendance)
+app.post("/api/live-classes/:id/join", (req, res) => {
+  try {
+    const db = readDB();
+    const { id } = req.params;
+    const { studentId, studentName, device, browser } = req.body;
+
+    if (!studentName) {
+      return res.status(400).json({ error: "Student name is required to join" });
+    }
+
+    db.attendance = db.attendance || [];
+
+    // Idempotent check: if already joined and not left, or even if joined, let's keep one record per student per class to avoid duplication.
+    const existing = db.attendance.find(
+      (a: any) => a.meetingId === id && a.studentId === studentId
+    );
+
+    if (existing) {
+      // Just return existing record to avoid duplications
+      return res.json(existing);
+    }
+
+    const newAttendance = {
+      id: "ATT-" + Date.now(),
+      meetingId: id,
+      studentId: studentId || "STU-GUEST-" + Math.floor(Math.random() * 1000),
+      studentName,
+      joinedAt: new Date().toISOString(),
+      leftAt: null,
+      duration: 0,
+      device: device || "Desktop/Mobile Browser",
+      browser: browser || "Web Browser",
+      status: "Present"
+    };
+
+    db.attendance.push(newAttendance);
+    writeDB(db);
+    res.json(newAttendance);
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to log joining" });
+  }
+});
+
+// 9. Leave a live class
+app.post("/api/live-classes/:id/leave", (req, res) => {
+  try {
+    const db = readDB();
+    const { id } = req.params;
+    const { studentId } = req.body;
+
+    db.attendance = db.attendance || [];
+    const record = db.attendance.find(
+      (a: any) => a.meetingId === id && a.studentId === studentId && !a.leftAt
+    );
+
+    if (record) {
+      record.leftAt = new Date().toISOString();
+      const diffMs = new Date(record.leftAt).getTime() - new Date(record.joinedAt).getTime();
+      record.duration = Math.max(1, Math.round(diffMs / 60000));
+      writeDB(db);
+      return res.json(record);
+    }
+
+    res.json({ message: "No active session to leave" });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to log leaving" });
+  }
+});
+
+// 10. Get all recordings
+app.get("/api/meeting-recordings", (req, res) => {
+  try {
+    const db = readDB();
+    res.json(db.meetingRecordings || []);
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to fetch recordings" });
+  }
+});
+
+// 11. Get live class history
+app.get("/api/live-classes/history", (req, res) => {
+  try {
+    const db = readDB();
+    res.json(db.liveClassHistory || []);
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to fetch live class history" });
+  }
+});
+
+// 12. Get all attendance logs
+app.get("/api/live-classes/attendance", (req, res) => {
+  try {
+    const db = readDB();
+    res.json(db.attendance || []);
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to fetch all attendance logs" });
+  }
+});
+
+// 13. Get all notifications
+app.get("/api/notifications", (req, res) => {
+  try {
+    const db = readDB();
+    res.json(db.notifications || []);
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to fetch notifications" });
+  }
+});
+
+// 14. Mark notifications as read for a student
+app.post("/api/notifications/read", (req, res) => {
+  try {
+    const db = readDB();
+    const { studentId } = req.body;
+    if (studentId) {
+      db.notifications = db.notifications || [];
+      db.notifications.forEach((ntf: any) => {
+        ntf.readBy = ntf.readBy || [];
+        if (!ntf.readBy.includes(studentId)) {
+          ntf.readBy.push(studentId);
+        }
+      });
+      writeDB(db);
+    }
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to mark notifications read" });
+  }
+});
+
 
 
 // --- VITE DEV / PRODUCTION MIDDLEWARE ---

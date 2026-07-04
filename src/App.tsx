@@ -17,6 +17,7 @@ import { ACADEMY_INFO, COURSES, TEACHERS } from "./data";
 import logoImage from "./assets/images/academy_logo_1782839442092.jpg";
 import { useLanguage } from "./context/LanguageContext";
 import { LANGUAGE_NAMES, Language } from "./translations";
+import { API } from "./config";
 
 export default function App() {
   const { language, setLanguage, t } = useLanguage();
@@ -60,9 +61,7 @@ export default function App() {
   const fetchState = async () => {
     try {
       setLoading(true);
-      const res = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/db`
-);
+      const res = await fetch(`${API}/api/db`);
       if (res.ok) {
         const data = await res.json();
         setStudents(data.students || []);
@@ -419,7 +418,7 @@ export default function App() {
 
                 {/* --- TAB 4: LIVE WHITEBOARD CLASSROOM --- */}
                 {activeTab === "live" && (
-                  <LiveClassroom />
+                  <LiveClassroom currentUser={currentUser as any} />
                 )}
 
                 {/* --- TAB 5: MCQ TEST CENTER --- */}
