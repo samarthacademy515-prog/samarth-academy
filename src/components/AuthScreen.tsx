@@ -408,34 +408,169 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
         </AnimatePresence>
 
         {/* Login Type Tabs (Existing vs. New User) */}
-        <div className="grid grid-cols-2 border-b border-slate-800 bg-slate-950/50">
-          <button
-            onClick={() => { setActiveTab("existing"); setErrorMsg(null); }}
-            className={`py-3.5 text-xs font-extrabold tracking-wider uppercase transition-colors relative cursor-pointer ${
-              activeTab === "existing" ? "text-amber-400 bg-slate-900/40" : "text-slate-500 hover:text-slate-300"
-            }`}
-          >
-            {t("auth.existing_tab")}
-            {activeTab === "existing" && (
-              <motion.div layoutId="activeTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500" />
-            )}
-          </button>
-          <button
-            onClick={() => { setActiveTab("new"); setErrorMsg(null); }}
-            className={`py-3.5 text-xs font-extrabold tracking-wider uppercase transition-colors relative cursor-pointer ${
-              activeTab === "new" ? "text-amber-400 bg-slate-900/40" : "text-slate-500 hover:text-slate-300"
-            }`}
-          >
-            {t("auth.new_tab")}
-            {activeTab === "new" && (
-              <motion.div layoutId="activeTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500" />
-            )}
-          </button>
-        </div>
+        {!showGoogleChooser && (
+          <div className="grid grid-cols-2 border-b border-slate-800 bg-slate-950/50">
+            <button
+              onClick={() => { setActiveTab("existing"); setErrorMsg(null); }}
+              className={`py-3.5 text-xs font-extrabold tracking-wider uppercase transition-colors relative cursor-pointer ${
+                activeTab === "existing" ? "text-amber-400 bg-slate-900/40" : "text-slate-500 hover:text-slate-300"
+              }`}
+            >
+              {t("auth.existing_tab")}
+              {activeTab === "existing" && (
+                <motion.div layoutId="activeTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500" />
+              )}
+            </button>
+            <button
+              onClick={() => { setActiveTab("new"); setErrorMsg(null); }}
+              className={`py-3.5 text-xs font-extrabold tracking-wider uppercase transition-colors relative cursor-pointer ${
+                activeTab === "new" ? "text-amber-400 bg-slate-900/40" : "text-slate-500 hover:text-slate-300"
+              }`}
+            >
+              {t("auth.new_tab")}
+              {activeTab === "new" && (
+                <motion.div layoutId="activeTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500" />
+              )}
+            </button>
+          </div>
+        )}
 
         <div className="p-6">
           <AnimatePresence mode="wait">
-            {activeTab === "existing" ? (
+            {showGoogleChooser ? (
+              <motion.div
+                key="google-chooser-view"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white text-slate-900 rounded-2xl p-5 border border-slate-200 shadow-xl space-y-3.5"
+              >
+                <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                  <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider flex items-center gap-1">
+                    <Chrome className="w-3.5 h-3.5 text-red-500" />
+                    {language === "marathi" ? "Google द्वारे सुरक्षित लॉगिन" : language === "hindi" ? "Google द्वारा सुरक्षित लॉगिन" : "Secure Login via Google"}
+                  </span>
+                  <button 
+                    onClick={() => { setShowGoogleChooser(false); setIsGoogleSigning(false); }} 
+                    className="text-slate-400 hover:text-slate-900 font-bold text-sm cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {!showAddAccountForm && deviceAccounts.length > 0 ? (
+                  <div className="space-y-3">
+                    <p className="text-[11px] text-slate-500 leading-normal font-medium">
+                      {language === "marathi" 
+                        ? "तुमच्या डिव्हाइसवर जोडलेली खाती निवडा:" 
+                        : language === "hindi" 
+                        ? "अपने डिवाइस पर जुड़े खाते चुनें:" 
+                        : "Select an account active on this device:"}
+                    </p>
+
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                      {deviceAccounts.map((acc, index) => {
+                        const initial = acc.name ? acc.name.charAt(0).toUpperCase() : "U";
+                        return (
+                          <div
+                            key={acc.email}
+                            onClick={() => selectGoogleAccount(acc.email)}
+                            className="w-full text-left p-2.5 hover:bg-slate-50 rounded-xl border border-slate-100 hover:border-slate-300 flex items-center justify-between font-semibold text-slate-850 cursor-pointer transition-all group"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center font-bold text-xs uppercase group-hover:bg-amber-500 group-hover:text-white group-hover:border-transparent transition-colors">
+                                {initial}
+                              </div>
+                              <div className="truncate max-w-[160px] sm:max-w-[200px]">
+                                <p className="leading-tight text-xs text-slate-800">{acc.name}</p>
+                                <p className="text-[10px] text-slate-400 font-normal truncate">{acc.email}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-amber-500 transition-colors" />
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (confirm(language === "marathi" ? "हे खाते या डिव्हाइसवरून काढायचे?" : "Remove this account from this device?")) {
+                                    removeDeviceAccount(acc.email);
+                                  }
+                                }}
+                                className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all cursor-pointer"
+                                title="Remove from device"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGoogleEmail("");
+                        setShowAddAccountForm(true);
+                      }}
+                      className="w-full text-center py-2 hover:bg-slate-50 rounded-xl text-amber-600 font-bold text-[11px] border border-dashed border-amber-200 transition-colors flex items-center justify-center gap-1 cursor-pointer mt-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      {language === "marathi" ? "दुसरे खाते वापरा" : language === "hindi" ? "दूसरा खाता जोड़ें" : "Use another account"}
+                    </button>
+                  </div>
+                ) : (
+                  <form 
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (googleEmail.trim()) {
+                        selectGoogleAccount(googleEmail.trim());
+                      }
+                    }}
+                    className="space-y-3.5 text-xs"
+                  >
+                    <p className="text-[11px] text-slate-500 leading-normal">
+                      {language === "marathi" 
+                        ? "आपल्या फोन/डिव्हाइसवर सुरू असलेले Google (Gmail) खाते येथे टाका:" 
+                        : language === "hindi" 
+                        ? "अपने फोन/डिवाइस पर सक्रिय Google (Gmail) खाता यहाँ दर्ज करें:" 
+                        : "Enter the Google (Gmail) account active on your phone/device to proceed:"}
+                    </p>
+                    
+                    <div className="space-y-1">
+                      <input
+                        type="email"
+                        required
+                        placeholder="yourname@gmail.com"
+                        value={googleEmail}
+                        onChange={(e) => setGoogleEmail(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold focus:outline-none focus:border-amber-500 focus:bg-white transition-all placeholder-slate-400 font-mono"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-2 pt-1">
+                      <button
+                        type="submit"
+                        className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2 px-4 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs"
+                      >
+                        <Unlock className="w-3.5 h-3.5 text-amber-400" />
+                        {language === "marathi" ? "लॉगिन करा" : language === "hindi" ? "लॉगिन करें" : "Sign In & Continue"}
+                      </button>
+
+                      {deviceAccounts.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAddAccountForm(false)}
+                          className="text-center text-[10px] text-slate-500 hover:text-slate-800 underline font-semibold py-1 cursor-pointer transition-all"
+                        >
+                          {language === "marathi" ? "← जतन केलेल्या खात्यांवर परत जा" : language === "hindi" ? "← सहेजे गए खातों पर वापस जाएं" : "← Back to saved accounts on this device"}
+                        </button>
+                      )}
+                    </div>
+                  </form>
+                )}
+              </motion.div>
+            ) : activeTab === "existing" ? (
               <motion.div
                 key="existing-form"
                 initial={{ opacity: 0, x: -10 }}
@@ -552,6 +687,35 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                       </>
                     )}
                   </button>
+
+                  {(selectedRole === "student" || selectedRole === "parent") && (
+                    <>
+                      {/* Separator Line */}
+                      <div className="relative flex py-1 items-center">
+                        <div className="flex-grow border-t border-slate-850"></div>
+                        <span className="flex-shrink mx-3 text-slate-500 text-[10px] uppercase font-black tracking-wider">
+                          {language === "marathi" ? "किंवा" : language === "hindi" ? "या" : "OR"}
+                        </span>
+                        <div className="flex-grow border-t border-slate-850"></div>
+                      </div>
+
+                      {/* Google Sign In Button */}
+                      <button
+                        type="button"
+                        onClick={handleGoogleSignIn}
+                        disabled={isGoogleSigning}
+                        className="w-full bg-white hover:bg-slate-50 text-slate-900 font-bold py-2.5 px-4 rounded-xl border border-slate-200 transition-all flex items-center justify-center gap-2.5 shadow-sm hover:shadow cursor-pointer text-xs sm:text-sm"
+                      >
+                        {isGoogleSigning ? (
+                          <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-900"></span>
+                        ) : (
+                          <>
+                            <Chrome className="w-4 h-4 text-red-500" /> {t("auth.google_btn")}
+                          </>
+                        )}
+                      </button>
+                    </>
+                  )}
                 </form>
 
                 {/* Demo Directory Finder Overlay */}
@@ -644,138 +808,6 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                     </>
                   )}
                 </button>
-
-                {/* Simulated Google Account Chooser */}
-                <AnimatePresence>
-                  {showGoogleChooser && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className="bg-white text-slate-900 rounded-2xl p-5 border border-slate-200 shadow-xl space-y-3.5"
-                    >
-                      <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider flex items-center gap-1">
-                          <Chrome className="w-3.5 h-3.5 text-red-500" />
-                          {language === "marathi" ? "Google द्वारे सुरक्षित लॉगिन" : language === "hindi" ? "Google द्वारा सुरक्षित लॉगिन" : "Secure Login via Google"}
-                        </span>
-                        <button onClick={() => setShowGoogleChooser(false)} className="text-slate-400 hover:text-slate-900 font-bold text-sm">✕</button>
-                      </div>
-
-                      {!showAddAccountForm && deviceAccounts.length > 0 ? (
-                        <div className="space-y-3">
-                          <p className="text-[11px] text-slate-500 leading-normal font-medium">
-                            {language === "marathi" 
-                              ? "तुमच्या डिव्हाइसवर जोडलेली खाती निवडा:" 
-                              : language === "hindi" 
-                              ? "अपने डिवाइस पर जुड़े खाते चुनें:" 
-                              : "Select an account active on this device:"}
-                          </p>
-
-                          <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                            {deviceAccounts.map((acc, index) => {
-                              const initial = acc.name ? acc.name.charAt(0).toUpperCase() : "U";
-                              return (
-                                <div
-                                  key={acc.email}
-                                  onClick={() => selectGoogleAccount(acc.email)}
-                                  className="w-full text-left p-2.5 hover:bg-slate-50 rounded-xl border border-slate-100 hover:border-slate-300 flex items-center justify-between font-semibold text-slate-850 cursor-pointer transition-all group"
-                                >
-                                  <div className="flex items-center gap-2.5">
-                                    <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center font-bold text-xs uppercase group-hover:bg-amber-500 group-hover:text-white group-hover:border-transparent transition-colors">
-                                      {initial}
-                                    </div>
-                                    <div className="truncate max-w-[160px] sm:max-w-[200px]">
-                                      <p className="leading-tight text-xs text-slate-800">{acc.name}</p>
-                                      <p className="text-[10px] text-slate-400 font-normal truncate">{acc.email}</p>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-1.5">
-                                    <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-amber-500 transition-colors" />
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (confirm(language === "marathi" ? "हे खाते या डिव्हाइसवरून काढायचे?" : "Remove this account from this device?")) {
-                                          removeDeviceAccount(acc.email);
-                                        }
-                                      }}
-                                      className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                      title="Remove from device"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setGoogleEmail("");
-                              setShowAddAccountForm(true);
-                            }}
-                            className="w-full text-center py-2 hover:bg-slate-50 rounded-xl text-amber-600 font-bold text-[11px] border border-dashed border-amber-200 transition-colors flex items-center justify-center gap-1 cursor-pointer mt-1"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                            {language === "marathi" ? "दुसरे खाते वापरा" : language === "hindi" ? "दूसरा खाता जोड़ें" : "Use another account"}
-                          </button>
-                        </div>
-                      ) : (
-                        <form 
-                          onSubmit={(e) => {
-                            e.preventDefault();
-                            if (googleEmail.trim()) {
-                              selectGoogleAccount(googleEmail.trim());
-                            }
-                          }}
-                          className="space-y-3.5 text-xs"
-                        >
-                          <p className="text-[11px] text-slate-500 leading-normal">
-                            {language === "marathi" 
-                              ? "आपल्या फोन/डिव्हाइसवर सुरू असलेले Google (Gmail) खाते येथे टाका:" 
-                              : language === "hindi" 
-                              ? "अपने फोन/डिवाइस पर सक्रिय Google (Gmail) खाता यहाँ दर्ज करें:" 
-                              : "Enter the Google (Gmail) account active on your phone/device to proceed:"}
-                          </p>
-                          
-                          <div className="space-y-1">
-                            <input
-                              type="email"
-                              required
-                              placeholder="yourname@gmail.com"
-                              value={googleEmail}
-                              onChange={(e) => setGoogleEmail(e.target.value)}
-                              className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold focus:outline-none focus:border-amber-500 focus:bg-white transition-all placeholder-slate-400 font-mono"
-                            />
-                          </div>
-
-                          <div className="flex flex-col gap-2 pt-1">
-                            <button
-                              type="submit"
-                              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2 px-4 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs"
-                            >
-                              <Unlock className="w-3.5 h-3.5 text-amber-400" />
-                              {language === "marathi" ? "लॉगिन करा" : language === "hindi" ? "लॉगिन करें" : "Sign In & Continue"}
-                            </button>
-
-                            {deviceAccounts.length > 0 && (
-                              <button
-                                type="button"
-                                onClick={() => setShowAddAccountForm(false)}
-                                className="text-center text-[10px] text-slate-500 hover:text-slate-800 underline font-semibold py-1 cursor-pointer transition-all"
-                              >
-                                {language === "marathi" ? "← जतन केलेल्या खात्यांवर परत जा" : language === "hindi" ? "← सहेजे गए खातों पर वापस जाएं" : "← Back to saved accounts on this device"}
-                              </button>
-                            )}
-                          </div>
-                        </form>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
 
                 {/* Separator Line */}
                 <div className="relative flex py-1 items-center">

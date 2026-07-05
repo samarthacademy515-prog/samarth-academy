@@ -4,12 +4,15 @@ import fs from "fs";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 import cors from "cors";
+import { initializeApp, getApps } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
 
 dotenv.config();
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const DB_FILE = path.join(process.cwd(), "db.json");
+const BUCKET_ID = "55Hzc2BTocPjFMadrLYjbq";
 
 
 app.use(cors({
@@ -241,12 +244,230 @@ function readDB() {
   }
 }
 
+// Debounce cloud sync to avoid rate limits
+let syncTimeout: NodeJS.Timeout | null = null;
+
 // Write DB
 function writeDB(data: any) {
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf-8");
+    
+    // Trigger asynchronous cloud sync with a 1.5s debounce
+    if (syncTimeout) clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(() => {
+      syncToCloud(data);
+    }, 1500);
   } catch (error) {
     console.error("Error writing database file:", error);
+  }
+}
+
+let dbFirestore: any = null;
+
+function getFirestoreDb() {
+  if (!dbFirestore) {
+    try {
+      const configPath = path.join(process.cwd(), "firebase-applet-config.json");
+      if (fs.existsSync(configPath)) {
+        const firebaseConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+        
+        if (getApps().length === 0) {
+          initializeApp({
+            projectId: firebaseConfig.projectId,
+          });
+        }
+        const dbId = firebaseConfig.firestoreDatabaseId;
+        dbFirestore = dbId ? getFirestore(dbId) : getFirestore();
+        console.log("[FIREBASE] Initialized firebase-admin Firestore successfully.");
+      } else {
+        console.warn("[FIREBASE] firebase-applet-config.json not found!");
+      }
+    } catch (error) {
+      console.error("[FIREBASE] Error initializing Firestore:", error);
+    }
+  }
+  return dbFirestore;
+}
+
+const KEYS_TO_SYNC = [
+  "students",
+  "feeLogs",
+  "assignments",
+  "liveClasses",
+  "attendance",
+  "meetingLogs",
+  "meetingRecordings",
+  "whatsappLogs",
+  "notifications",
+  "liveClassHistory",
+  "loginHistory",
+  "settings"
+];
+
+// Async Cloud Sync Helper using Google Cloud Firestore (Admin SDK)
+async function syncToCloud(data: any) {
+  try {
+    const firestore = getFirestoreDb();
+    if (!firestore) {
+      console.warn("[FIREBASE] Firestore not initialized, skipping sync.");
+      return;
+    }
+    
+    console.log("[FIREBASE] Syncing database to Google Cloud Firestore...");
+    
+    // Sync each key to its own document to avoid hitting the 1MB document size limit
+    for (const key of KEYS_TO_SYNC) {
+      if (data[key] !== undefined) {
+        const docRef = firestore.collection("academy_data").doc(key);
+        await docRef.set({
+          data: data[key],
+          updatedAt: new Date().toISOString()
+        });
+      }
+    }
+    
+    // Also sync paymentQR if it exists in data
+    if (data.paymentQR) {
+      await syncQrToCloud(data.paymentQR);
+    }
+    
+    console.log("[FIREBASE] Database state successfully synced to Google Cloud Firestore.");
+  } catch (error: any) {
+    console.error("[FIREBASE] Error syncing to Google Cloud Firestore:", error.message);
+  }
+}
+
+async function syncQrToCloud(qrData: any) {
+  try {
+    const firestore = getFirestoreDb();
+    if (!firestore) return;
+    
+    const docRef = firestore.collection("academy_config").doc("payment_qr");
+    await docRef.set({
+      data: qrData,
+      updatedAt: new Date().toISOString()
+    });
+    console.log("[FIREBASE] QR code successfully synced to Google Cloud Firestore.");
+  } catch (error: any) {
+    console.error("[FIREBASE] Error syncing QR code to Google Cloud Firestore:", error.message);
+  }
+}
+
+async function initialCloudRestore() {
+  console.log("[FIREBASE] Attempting to restore database from Google Cloud Firestore...");
+  try {
+    const firestore = getFirestoreDb();
+    if (!firestore) {
+      console.warn("[FIREBASE] Firestore not initialized, skipping cloud restore.");
+      return;
+    }
+    
+    let localData: any = {
+      students: [],
+      feeLogs: [],
+      assignments: [],
+      liveClasses: [],
+      attendance: [],
+      meetingLogs: [],
+      meetingRecordings: [],
+      whatsappLogs: [],
+      notifications: [],
+      liveClassHistory: [],
+      loginHistory: [],
+      settings: {}
+    };
+    
+    if (fs.existsSync(DB_FILE)) {
+      try {
+        localData = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
+      } catch (err) {}
+    }
+    
+    const cloudData: any = {};
+    let hasCloudData = false;
+    
+    for (const key of KEYS_TO_SYNC) {
+      try {
+        const docRef = firestore.collection("academy_data").doc(key);
+        const docSnap = await docRef.get();
+        if (docSnap.exists) {
+          const docData = docSnap.data();
+          cloudData[key] = docData.data;
+          hasCloudData = true;
+        }
+      } catch (keyErr: any) {
+        console.error(`[FIREBASE] Error fetching key "${key}" from Firestore:`, keyErr.message);
+      }
+    }
+    
+    if (!hasCloudData) {
+      console.log("[FIREBASE] No cloud database state found on Google Cloud Firestore. Starting fresh or using local cache.");
+      return;
+    }
+    
+    console.log("[FIREBASE] Cloud state fetched from Firestore. Merging into local database...");
+    
+    // Merge Students carefully by unique student id / email / loginCode
+    const mergedStudents = [...(localData.students || [])];
+    if (cloudData.students && Array.isArray(cloudData.students)) {
+      for (const cs of cloudData.students) {
+        if (!mergedStudents.some((ls: any) => ls.id === cs.id || (cs.email && ls.email === cs.email))) {
+          mergedStudents.push(cs);
+        }
+      }
+    }
+    
+    // Merge Fee Logs
+    const mergedFeeLogs = [...(localData.feeLogs || [])];
+    if (cloudData.feeLogs && Array.isArray(cloudData.feeLogs)) {
+      for (const cf of cloudData.feeLogs) {
+        if (!mergedFeeLogs.some((lf: any) => lf.id === cf.id)) {
+          mergedFeeLogs.push(cf);
+        }
+      }
+    }
+    
+    // Merge settings
+    const mergedSettings = { ...(localData.settings || {}), ...(cloudData.settings || {}) };
+    
+    // Merge other collections completely, preferring cloud data if available
+    const mergedData = {
+      ...localData,
+      ...cloudData,
+      students: mergedStudents,
+      feeLogs: mergedFeeLogs,
+      settings: mergedSettings
+    };
+    
+    // Save merged data
+    fs.writeFileSync(DB_FILE, JSON.stringify(mergedData, null, 2), "utf-8");
+    console.log("[FIREBASE] Cloud database merge successful! Active students count:", mergedData.students?.length || 0);
+  } catch (error: any) {
+    console.error("[FIREBASE] Error restoring from Firestore database:", error.message);
+  }
+}
+
+async function restoreQrFromCloud() {
+  try {
+    const firestore = getFirestoreDb();
+    if (!firestore) return;
+    
+    const docRef = firestore.collection("academy_config").doc("payment_qr");
+    const docSnap = await docRef.get();
+    if (docSnap.exists) {
+      const qrData = docSnap.data().data;
+      let localData: any = {};
+      if (fs.existsSync(DB_FILE)) {
+        try {
+          localData = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
+        } catch (err) {}
+      }
+      localData.paymentQR = qrData;
+      fs.writeFileSync(DB_FILE, JSON.stringify(localData, null, 2), "utf-8");
+      console.log("[FIREBASE] Payment QR successfully restored from Google Cloud Firestore.");
+    }
+  } catch (error: any) {
+    console.error("[FIREBASE] Error restoring QR code from Google Cloud Firestore:", error.message);
   }
 }
 
@@ -1171,6 +1392,10 @@ app.post("/api/notifications/read", (req, res) => {
 // --- VITE DEV / PRODUCTION MIDDLEWARE ---
 
 async function startServer() {
+  console.log("Triggering cloud database check and restore...");
+  await initialCloudRestore();
+  await restoreQrFromCloud();
+
   const isProd = process.env.NODE_ENV === "production";
   const distExists = fs.existsSync(path.join(process.cwd(), "dist"));
 
