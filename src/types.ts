@@ -10,6 +10,7 @@ export interface Student {
   totalFees: number;
   paidFees: number;
   attendance: Record<string, "Present" | "Absent">;
+  loginCode?: string;
 }
 
 export interface FeeLog {

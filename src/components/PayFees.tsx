@@ -37,6 +37,32 @@ export default function PayFees({ students, currentUser, onPaymentSuccess }: Pay
   const [successReceipt, setSuccessReceipt] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const [customQr, setCustomQr] = useState<{
+    image: string;
+    fileName: string;
+    fileSize: string;
+    uploadedBy: string;
+    uploadDate: string;
+  } | null>(null);
+
+  // Fetch custom QR Code from server on mount
+  useEffect(() => {
+    const fetchQr = async () => {
+      try {
+        const response = await fetch(`${API}/api/qr`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.image) {
+            setCustomQr(data);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching payment QR code:", err);
+      }
+    };
+    fetchQr();
+  }, []);
+
   // Initialize for Logged-In Student or Parent
   useEffect(() => {
     if (currentUser.role === "student" || currentUser.role === "parent") {
@@ -476,7 +502,7 @@ export default function PayFees({ students, currentUser, onPaymentSuccess }: Pay
                   {/* QR Image Wrapper */}
                   <div className="relative p-2 bg-white rounded-2xl shadow-xl overflow-hidden group">
                     <img 
-                      src={payFeesQrImage} 
+                      src={customQr ? customQr.image : payFeesQrImage} 
                       alt="UPI QR Code" 
                       className="w-48 h-48 sm:w-56 sm:h-56 object-contain rounded-xl"
                       referrerPolicy="no-referrer"

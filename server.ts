@@ -19,16 +19,18 @@ app.use(cors({
 
 app.options("*", cors());
 
-app.use(express.json());
-
-app.use(express.json());
-
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
 app.use((req, res, next) => {
   console.log(`[REQUEST] ${req.method} ${req.url}`);
   if (req.body && Object.keys(req.body).length > 0) {
-    console.log("[REQUEST BODY]", JSON.stringify(req.body));
+    const bodyStr = JSON.stringify(req.body);
+    if (bodyStr.length > 500) {
+      console.log("[REQUEST BODY]", bodyStr.substring(0, 500) + "... (truncated)");
+    } else {
+      console.log("[REQUEST BODY]", bodyStr);
+    }
   }
   next();
 });
@@ -551,6 +553,60 @@ app.post("/api/fees/pay", (req, res) => {
   db.feeLogs.unshift(newReceipt); // Add to the top of logs
   writeDB(db);
   res.status(201).json({ success: true, receipt: newReceipt, student });
+});
+
+// 5.5. Payment QR Code Management
+app.get("/api/qr", (req, res) => {
+  try {
+    const db = readDB();
+    res.json(db.paymentQR || null);
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to fetch QR code." });
+  }
+});
+
+app.post("/api/qr", (req, res) => {
+  try {
+    const { image, fileName, fileSize, uploadedBy } = req.body;
+    if (!image) {
+      return res.status(400).json({ error: "Image data is required." });
+    }
+
+    // Verify format (must be data:image/...)
+    if (!image.startsWith("data:image/")) {
+      return res.status(400).json({ error: "Unsupported file format. Please upload JPG, JPEG, PNG or WEBP." });
+    }
+
+    // Validate size (5MB binary limit)
+    const approxBinarySize = (image.length * 3) / 4;
+    if (approxBinarySize > 5 * 1024 * 1024) {
+      return res.status(400).json({ error: "QR code image size must not exceed 5 MB." });
+    }
+
+    const db = readDB();
+    db.paymentQR = {
+      image,
+      fileName: fileName || "payment_qr.png",
+      fileSize: fileSize || "Unknown size",
+      uploadedBy: uploadedBy || "Admin",
+      uploadDate: new Date().toISOString()
+    };
+    writeDB(db);
+    res.status(200).json({ success: true, paymentQR: db.paymentQR });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to upload QR code: " + err.message });
+  }
+});
+
+app.delete("/api/qr", (req, res) => {
+  try {
+    const db = readDB();
+    db.paymentQR = null;
+    writeDB(db);
+    res.status(200).json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to delete QR code." });
+  }
 });
 
 // 6. Assignment operations

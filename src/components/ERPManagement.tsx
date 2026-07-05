@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Users, BookOpen, CreditCard, ClipboardCheck, Search, PlusCircle, Trash2, Printer, CheckCircle2, UserCheck, AlertTriangle, IndianRupee, Landmark } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Users, BookOpen, CreditCard, ClipboardCheck, Search, PlusCircle, Trash2, Printer, CheckCircle2, UserCheck, AlertTriangle, IndianRupee, Landmark, QrCode, Upload } from "lucide-react";
 import { Student, FeeLog } from "../types";
 import { COURSES } from "../data";
 import { API } from "../config";
@@ -11,9 +11,132 @@ interface ERPManagementProps {
 }
 
 export default function ERPManagement({ students, feeLogs, onRefreshData }: ERPManagementProps) {
-  const [activeTab, setActiveTab] = useState<"directory" | "attendance" | "fees" | "reports" | "logins">("directory");
+  const [activeTab, setActiveTab] = useState<"directory" | "attendance" | "fees" | "reports" | "logins" | "qrCode">("directory");
   const [loginHistory, setLoginHistory] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+
+  // QR Code Management states
+  const [activeQr, setActiveQr] = useState<any>(null);
+  const [qrPreview, setQrPreview] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [qrError, setQrError] = useState<string | null>(null);
+
+  const fetchActiveQr = async () => {
+    try {
+      const response = await fetch(`${API}/api/qr`);
+      if (response.ok) {
+        const data = await response.json();
+        setActiveQr(data);
+      }
+    } catch (err) {
+      console.error("Error fetching active QR:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "qrCode") {
+      fetchActiveQr();
+      setQrError(null);
+      setUploadSuccess(false);
+      setQrPreview(null);
+      setSelectedFile(null);
+    }
+  }, [activeTab]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Verify format
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      setQrError("कृपया फक्त JPG, JPEG, PNG किंवा WEBP फॉरमॅट मधील फोटो निवडा. (Format must be JPG, JPEG, PNG or WEBP)");
+      setQrPreview(null);
+      setSelectedFile(null);
+      return;
+    }
+
+    // Verify size (5 MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      setQrError("फोटोचा आकार ५ MB पेक्षा कमी असावा. (File size must be under 5 MB)");
+      setQrPreview(null);
+      setSelectedFile(null);
+      return;
+    }
+
+    setQrError(null);
+    setUploadSuccess(false);
+    setSelectedFile(file);
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setQrPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleUploadQr = async () => {
+    if (!qrPreview || !selectedFile) {
+      setQrError("कृपया आधी एक फोटो निवडा. (Please select a file first)");
+      return;
+    }
+
+    setUploadLoading(true);
+    setQrError(null);
+    setUploadSuccess(false);
+
+    try {
+      const payload = {
+        image: qrPreview,
+        fileName: selectedFile.name,
+        fileSize: (selectedFile.size / 1024).toFixed(1) + " KB",
+        uploadedBy: "Pratibha Rajesh Ingole (Director Admin)"
+      };
+
+      const response = await fetch(`${API}/api/qr`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Upload failed");
+      }
+
+      setUploadSuccess(true);
+      setActiveQr(data.paymentQR);
+      setSelectedFile(null);
+      setQrPreview(null);
+    } catch (err: any) {
+      setQrError(err.message || "Something went wrong during upload.");
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
+  const handleDeleteQr = async () => {
+    if (!window.confirm("तुम्हाला खात्री आहे की पेमेंट QR कोड हटवायचा आहे? (Are you sure you want to delete the QR code?)")) return;
+
+    try {
+      const response = await fetch(`${API}/api/qr`, { method: "DELETE" });
+      if (response.ok) {
+        setActiveQr(null);
+        setQrPreview(null);
+        setSelectedFile(null);
+        setUploadSuccess(false);
+        alert("QR कोड यशस्वीरित्या हटवला गेला. (QR Code deleted successfully)");
+      } else {
+        alert("Failed to delete QR code.");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const fetchLoginHistory = async () => {
     setHistoryLoading(true);
@@ -228,6 +351,15 @@ export default function ERPManagement({ students, feeLogs, onRefreshData }: ERPM
             }`}
           >
             <UserCheck className="w-3.5 h-3.5 text-amber-400" /> लॉगिन ट्रॅकर (Logins)
+          </button>
+          <button
+            onClick={() => setActiveTab("qrCode")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              activeTab === "qrCode" ? "bg-amber-500 text-slate-950" : "text-slate-400 hover:text-white"
+            }`}
+            id="btn-tab-qr-management"
+          >
+            <QrCode className="w-3.5 h-3.5 text-amber-400" /> पेमेंट QR व्यवस्थापन (QR Management)
           </button>
         </div>
       </div>
@@ -805,6 +937,223 @@ export default function ERPManagement({ students, feeLogs, onRefreshData }: ERPM
                         </div>
                       </div>
                     ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* --- 6. PAYMENT QR CODE MANAGEMENT --- */}
+        {activeTab === "qrCode" && (
+          <div className="space-y-6" id="erp-qrcode-panel">
+            <div className="border-b border-slate-800 pb-3">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <QrCode className="w-5 h-5 text-amber-500" />
+                पेमेंट QR कोड व्यवस्थापन (Payment QR Management)
+              </h3>
+              <p className="text-xs text-slate-400 mt-1 uppercase">
+                Manage the UPI QR Code displayed to Students and Parents for online fee payments
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              {/* Left Side: Upload & Controls */}
+              <div className="lg:col-span-7 bg-slate-950/40 border border-slate-850 p-6 rounded-xl space-y-6 flex flex-col justify-between">
+                <div className="space-y-4">
+                  <h4 className="text-sm font-bold text-slate-200 uppercase tracking-wider">
+                    QR कोड अपलोड करा (Upload / Replace QR)
+                  </h4>
+                  <p className="text-xs text-slate-400 leading-normal">
+                    Please upload the official UPI Merchant QR Code image from your device. This QR code will be instantly visible to all students and parents in the "Pay Fees" center.
+                  </p>
+
+                  {/* File Upload Selector Zone */}
+                  <div className="space-y-3">
+                    <div className="border-2 border-dashed border-slate-800 hover:border-amber-500/50 rounded-xl p-6 transition-all bg-slate-950/60 flex flex-col items-center justify-center text-center gap-3 relative group">
+                      <input
+                        type="file"
+                        accept="image/png, image/jpeg, image/jpg, image/webp"
+                        onChange={handleFileChange}
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                        id="qr-file-input"
+                      />
+                      <div className="w-12 h-12 rounded-full bg-slate-900 flex items-center justify-center border border-slate-800 group-hover:bg-amber-500/10 group-hover:border-amber-500/20 transition-all">
+                        <Upload className="w-5 h-5 text-slate-400 group-hover:text-amber-500 transition-all" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold text-slate-300">
+                          {selectedFile ? selectedFile.name : "फोटो निवडण्यासाठी येथे क्लिक करा किंवा ड्रॅग करा"}
+                        </p>
+                        <p className="text-[10px] text-slate-500">
+                          Supports: PNG, JPG, JPEG, WEBP (Max: 5 MB)
+                        </p>
+                      </div>
+                    </div>
+
+                    {qrError && (
+                      <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg text-xs font-semibold">
+                        ⚠️ {qrError}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Selected QR Preview */}
+                  {qrPreview && (
+                    <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row items-center gap-4">
+                      <div className="shrink-0 bg-white p-2 rounded-lg border border-slate-700">
+                        <img
+                          src={qrPreview}
+                          alt="QR Code Preview"
+                          className="w-24 h-24 object-contain"
+                        />
+                      </div>
+                      <div className="space-y-2 text-xs text-slate-300 w-full">
+                        <div>
+                          <p className="font-bold text-white uppercase text-[10px] tracking-wider text-slate-500 font-sans">निवडलेला फोटो (Selected Preview):</p>
+                          <p className="font-semibold truncate max-w-xs mt-0.5">{selectedFile?.name}</p>
+                          <p className="text-[10px] text-slate-400 font-mono">Size: {selectedFile ? (selectedFile.size / 1024).toFixed(1) + " KB" : ""}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleUploadQr}
+                          disabled={uploadLoading}
+                          className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 text-xs shadow-md"
+                          id="btn-save-uploaded-qr"
+                        >
+                          {uploadLoading ? (
+                            <>
+                              <span className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
+                              जतन होत आहे (Saving...)
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              QR कोड जतन करा (Save QR Code)
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Upload Success Details Banner */}
+                  {uploadSuccess && activeQr && (
+                    <div className="bg-emerald-500/10 border-2 border-emerald-500/20 p-4 rounded-xl space-y-2.5 text-xs text-emerald-300">
+                      <div className="flex items-center gap-2 text-emerald-400 font-black">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>✅ Upload Successful (QR कोड अपलोड यशस्वी झाला)</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-y-1.5 gap-x-4 pt-1.5 border-t border-emerald-500/10 font-medium">
+                        <div>
+                          <span className="text-[9px] uppercase font-bold text-slate-500 block leading-none">Upload Date:</span>
+                          <span className="text-white text-[11px] font-mono">{activeQr.uploadDate ? new Date(activeQr.uploadDate).toLocaleString("en-IN") : "N/A"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[9px] uppercase font-bold text-slate-500 block leading-none">Uploaded By:</span>
+                          <span className="text-white text-[11px] font-semibold">{activeQr.uploadedBy || "Pratibha Rajesh Ingole"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[9px] uppercase font-bold text-slate-500 block leading-none">File Size:</span>
+                          <span className="text-white text-[11px] font-mono">{activeQr.fileSize || "N/A"}</span>
+                        </div>
+                        <div>
+                          <span className="text-[9px] uppercase font-bold text-slate-500 block leading-none">File Name:</span>
+                          <span className="text-white text-[11px] truncate max-w-[120px] block font-mono">{activeQr.fileName || "N/A"}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-850 text-[11px] text-slate-400 leading-normal space-y-2 mt-4">
+                  <span className="text-amber-500 font-bold uppercase block tracking-wider">⚠️ Security Notice:</span>
+                  <p>
+                    Only authorized Admins (Founding Director Pratibha R. Ingole) can upload, delete, or replace this QR code. Teachers, students, and parents have read-only permissions and can only view this QR in order to make secure payments. No developer coding is required to modify this QR image.
+                  </p>
+                </div>
+              </div>
+
+              {/* Right Side: Active QR Status & Preview */}
+              <div className="lg:col-span-5 bg-slate-950/40 border border-slate-850 p-6 rounded-xl flex flex-col items-center justify-between text-center min-h-[400px]">
+                <div className="w-full space-y-4">
+                  <h4 className="text-sm font-bold text-slate-200 uppercase tracking-wider block">
+                    सध्याचा सक्रिय QR (Active QR Status)
+                  </h4>
+
+                  {/* QR Box */}
+                  <div className="flex flex-col items-center justify-center p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3.5 shadow-inner">
+                    {activeQr ? (
+                      <>
+                        <div className="bg-white p-2.5 rounded-2xl shadow-xl border border-slate-755">
+                          <img
+                            src={activeQr.image}
+                            alt="Active UPI QR Code"
+                            className="w-48 h-48 object-contain rounded-xl"
+                          />
+                        </div>
+                        <div className="text-xs space-y-1">
+                          <p className="font-extrabold text-amber-500 uppercase tracking-wider text-[10px]">सक्रिय कस्टम QR कोड (Active Custom QR)</p>
+                          <p className="text-[10px] text-slate-400 font-mono">Uploaded: {new Date(activeQr.uploadDate).toLocaleDateString("en-IN")}</p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-48 h-48 bg-slate-950/80 rounded-2xl border border-slate-850 flex flex-col items-center justify-center gap-2">
+                          <QrCode className="w-12 h-12 text-slate-600 animate-pulse" />
+                          <span className="text-[10px] text-slate-500 uppercase font-black">Default QR Code Active</span>
+                        </div>
+                        <div className="text-xs text-slate-400 leading-normal max-w-xs">
+                          <p className="font-semibold text-white text-[11px] text-amber-500 uppercase tracking-wider">अकॅडमी डीफॉल्ट QR कोड चालू आहे</p>
+                          <p className="text-[10px] text-slate-400 mt-1">
+                            No custom QR has been uploaded yet. The system is currently displaying the default merchant QR image to payers.
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Controls */}
+                <div className="w-full pt-6 border-t border-slate-850 flex flex-col gap-2.5">
+                  {activeQr ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const win = window.open();
+                          if (win) {
+                            win.document.write(`<iframe src="${activeQr.image}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+                          } else {
+                            alert("Allow popups to view full-size preview.");
+                          }
+                        }}
+                        className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-850 text-slate-200 border border-slate-800 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                        id="btn-preview-qr-full"
+                      >
+                        <Search className="w-3.5 h-3.5 text-amber-500" />
+                        QR कोड पाहा (Preview QR Code)
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleDeleteQr}
+                        className="w-full py-2.5 px-4 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/20 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                        id="btn-delete-active-qr"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        QR कोड हटवा (Delete QR Code)
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full py-2.5 px-4 bg-slate-900 text-slate-500 border border-slate-850 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 opacity-40 cursor-not-allowed"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      QR कोड हटवा (Delete QR)
+                    </button>
                   )}
                 </div>
               </div>
