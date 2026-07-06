@@ -4,8 +4,7 @@ import fs from "fs";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 import cors from "cors";
-import { initializeApp, getApps, cert } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { createClient } from "@supabase/supabase-js";
 
 dotenv.config({ override: true });
 
@@ -262,54 +261,47 @@ function writeDB(data: any) {
   }
 }
 
-let dbFirestore: any = null;
-let firebaseInitializationChecked = false;
+let supabaseAdmin: any = null;
+let supabaseInitializationChecked = false;
 
-function getFirestoreDb() {
-  if (firebaseInitializationChecked) {
-    return dbFirestore;
+function getSupabaseClient() {
+  if (supabaseInitializationChecked) {
+    return supabaseAdmin;
   }
 
   try {
-    const serviceAccountVar = process.env.FIREBASE_SERVICE_ACCOUNT;
-    if (serviceAccountVar) {
-      console.log("[FIREBASE] Found FIREBASE_SERVICE_ACCOUNT environment variable. Initializing standard Firebase Admin SDK...");
-      const serviceAccount = JSON.parse(serviceAccountVar);
-      if (serviceAccount && typeof serviceAccount === 'object' && serviceAccount.private_key) {
-        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+    const supabaseUrlRaw = process.env.SUPABASE_URL || "https://fvjklkfdvvkuffrwjskb.supabase.co";
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (supabaseServiceKey) {
+      console.log("[SUPABASE] Initializing Supabase Client via Service Role key...");
+      
+      // Trim rest/v1 or rest/v1/ suffix if any
+      let cleanedUrl = supabaseUrlRaw.trim();
+      if (cleanedUrl.endsWith("/rest/v1/")) {
+        cleanedUrl = cleanedUrl.substring(0, cleanedUrl.length - 8);
+      } else if (cleanedUrl.endsWith("/rest/v1")) {
+        cleanedUrl = cleanedUrl.substring(0, cleanedUrl.length - 7);
       }
       
-      if (getApps().length === 0) {
-        initializeApp({
-          credential: cert(serviceAccount)
-        });
-      }
-      
-      let dbId: string | undefined = undefined;
-      const configPath = path.join(process.cwd(), "firebase-applet-config.json");
-      if (fs.existsSync(configPath)) {
-        try {
-          const firebaseConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-          dbId = firebaseConfig.firestoreDatabaseId;
-        } catch (err) {
-          console.warn("[FIREBASE] Could not read custom database ID from config:", err);
+      supabaseAdmin = createClient(cleanedUrl, supabaseServiceKey, {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false
         }
-      }
-      
-      dbFirestore = dbId ? getFirestore(dbId) : getFirestore();
-      console.log("[FIREBASE] Centralized Firebase Admin SDK and Firestore successfully initialized via Service Account.");
+      });
+      console.log("[SUPABASE] Supabase Admin Client initialized successfully.");
     } else {
-      console.warn("[FIREBASE] FIREBASE_SERVICE_ACCOUNT environment variable is not defined.");
-      console.log("Firebase unavailable. Running in local database mode.");
+      console.warn("[SUPABASE] SUPABASE_SERVICE_ROLE_KEY environment variable is not defined.");
+      console.log("Supabase unavailable. Running in local database mode.");
     }
   } catch (error: any) {
-    console.error("[FIREBASE] Failed to initialize Firebase Admin SDK:", error.message || error);
-    console.log("Firebase unavailable. Running in local database mode.");
-    dbFirestore = null;
+    console.error("[SUPABASE] Failed to initialize Supabase Client:", error.message || error);
+    supabaseAdmin = null;
   } finally {
-    firebaseInitializationChecked = true;
+    supabaseInitializationChecked = true;
   }
-  return dbFirestore;
+  return supabaseAdmin;
 }
 
 const KEYS_TO_SYNC = [
@@ -327,25 +319,35 @@ const KEYS_TO_SYNC = [
   "settings"
 ];
 
-// Async Cloud Sync Helper using Google Cloud Firestore (Admin SDK)
+// Async Cloud Sync Helper using Supabase Database
 async function syncToCloud(data: any) {
   try {
-    const firestore = getFirestoreDb();
-    if (!firestore) {
-      console.warn("[FIREBASE] Firestore not initialized, skipping sync.");
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.warn("[SUPABASE] Supabase not initialized, skipping sync.");
       return;
     }
     
-    console.log("[FIREBASE] Syncing database to Google Cloud Firestore...");
+    console.log("[SUPABASE] Syncing database to Supabase PostgreSQL...");
     
-    // Sync each key to its own document to avoid hitting the 1MB document size limit
+    // Sync each key to its own row in academy_sync table
     for (const key of KEYS_TO_SYNC) {
       if (data[key] !== undefined) {
-        const docRef = firestore.collection("academy_data").doc(key);
-        await docRef.set({
-          data: data[key],
-          updatedAt: new Date().toISOString()
-        });
+        const { error } = await supabase
+          .from("academy_sync")
+          .upsert({
+            key,
+            data: data[key],
+            updated_at: new Date().toISOString()
+          }, { onConflict: "key" });
+
+        if (error) {
+          if (error.message && error.message.includes("Could not find the table")) {
+            console.warn(`[SUPABASE] NOTICE: 'academy_sync' table not found during sync for key "${key}". Run schema.sql in Supabase SQL Editor.`);
+          } else {
+            console.error(`[SUPABASE] Error upserting key "${key}" to Supabase:`, error.message);
+          }
+        }
       }
     }
     
@@ -354,34 +356,45 @@ async function syncToCloud(data: any) {
       await syncQrToCloud(data.paymentQR);
     }
     
-    console.log("[FIREBASE] Database state successfully synced to Google Cloud Firestore.");
+    console.log("[SUPABASE] Database state successfully synced to Supabase PostgreSQL.");
   } catch (error: any) {
-    console.error("[FIREBASE] Error syncing to Google Cloud Firestore:", error.message);
+    console.error("[SUPABASE] Error syncing to Supabase PostgreSQL:", error.message);
   }
 }
 
 async function syncQrToCloud(qrData: any) {
   try {
-    const firestore = getFirestoreDb();
-    if (!firestore) return;
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
     
-    const docRef = firestore.collection("academy_config").doc("payment_qr");
-    await docRef.set({
-      data: qrData,
-      updatedAt: new Date().toISOString()
-    });
-    console.log("[FIREBASE] QR code successfully synced to Google Cloud Firestore.");
+    const { error } = await supabase
+      .from("academy_sync")
+      .upsert({
+        key: "payment_qr",
+        data: qrData,
+        updated_at: new Date().toISOString()
+      }, { onConflict: "key" });
+
+    if (error) {
+      if (error.message && error.message.includes("Could not find the table")) {
+        console.warn("[SUPABASE] NOTICE: 'academy_sync' table not found during QR sync. Run schema.sql in Supabase SQL Editor.");
+      } else {
+        console.error("[SUPABASE] Error syncing QR code to Supabase:", error.message);
+      }
+    } else {
+      console.log("[SUPABASE] QR code successfully synced to Supabase PostgreSQL.");
+    }
   } catch (error: any) {
-    console.error("[FIREBASE] Error syncing QR code to Google Cloud Firestore:", error.message);
+    console.error("[SUPABASE] Error syncing QR code to Supabase:", error.message);
   }
 }
 
 async function initialCloudRestore() {
-  console.log("[FIREBASE] Attempting to restore database from Google Cloud Firestore...");
+  console.log("[SUPABASE] Attempting to restore database from Supabase PostgreSQL...");
   try {
-    const firestore = getFirestoreDb();
-    if (!firestore) {
-      console.warn("[FIREBASE] Firestore not initialized, skipping cloud restore.");
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.warn("[SUPABASE] Supabase not initialized, skipping cloud restore.");
       return;
     }
     
@@ -409,26 +422,35 @@ async function initialCloudRestore() {
     const cloudData: any = {};
     let hasCloudData = false;
     
-    for (const key of KEYS_TO_SYNC) {
-      try {
-        const docRef = firestore.collection("academy_data").doc(key);
-        const docSnap = await docRef.get();
-        if (docSnap.exists) {
-          const docData = docSnap.data();
-          cloudData[key] = docData.data;
+    // Fetch all keys at once for higher optimization!
+    const { data: rows, error } = await supabase
+      .from("academy_sync")
+      .select("key, data");
+
+    if (error) {
+      if (error.message && error.message.includes("Could not find the table")) {
+        console.warn("\n==================================================================================");
+        console.warn("[SUPABASE] NOTICE: The 'academy_sync' table was not found in your Supabase database.");
+        console.warn("Please copy the contents of 'schema.sql' and run them in your Supabase SQL Editor!");
+        console.warn("==================================================================================\n");
+      } else {
+        console.error("[SUPABASE] Error fetching from Supabase database:", error.message);
+      }
+    } else if (rows && rows.length > 0) {
+      for (const row of rows) {
+        if (KEYS_TO_SYNC.includes(row.key)) {
+          cloudData[row.key] = row.data;
           hasCloudData = true;
         }
-      } catch (keyErr: any) {
-        console.error(`[FIREBASE] Error fetching key "${key}" from Firestore:`, keyErr.message);
       }
     }
     
     if (!hasCloudData) {
-      console.log("[FIREBASE] No cloud database state found on Google Cloud Firestore. Starting fresh or using local cache.");
+      console.log("[SUPABASE] No cloud database state found on Supabase. Starting fresh or using local cache.");
       return;
     }
     
-    console.log("[FIREBASE] Cloud state fetched from Firestore. Merging into local database...");
+    console.log("[SUPABASE] Cloud state fetched from Supabase. Merging into local database...");
     
     // Merge Students carefully by unique student id / email / loginCode
     const mergedStudents = [...(localData.students || [])];
@@ -464,33 +486,42 @@ async function initialCloudRestore() {
     
     // Save merged data
     fs.writeFileSync(DB_FILE, JSON.stringify(mergedData, null, 2), "utf-8");
-    console.log("[FIREBASE] Cloud database merge successful! Active students count:", mergedData.students?.length || 0);
+    console.log("[SUPABASE] Cloud database merge successful! Active students count:", mergedData.students?.length || 0);
   } catch (error: any) {
-    console.error("[FIREBASE] Error restoring from Firestore database:", error.message);
+    console.error("[SUPABASE] Error restoring from Supabase database:", error.message);
   }
 }
 
 async function restoreQrFromCloud() {
   try {
-    const firestore = getFirestoreDb();
-    if (!firestore) return;
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
     
-    const docRef = firestore.collection("academy_config").doc("payment_qr");
-    const docSnap = await docRef.get();
-    if (docSnap.exists) {
-      const qrData = docSnap.data().data;
+    const { data, error } = await supabase
+      .from("academy_sync")
+      .select("data")
+      .eq("key", "payment_qr")
+      .maybeSingle();
+
+    if (error) {
+      if (error.message && error.message.includes("Could not find the table")) {
+        console.warn("[SUPABASE] NOTICE: 'academy_sync' table not found during QR restore.");
+      } else {
+        console.error("[SUPABASE] Error restoring QR code from Supabase:", error.message);
+      }
+    } else if (data && data.data) {
       let localData: any = {};
       if (fs.existsSync(DB_FILE)) {
         try {
           localData = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
         } catch (err) {}
       }
-      localData.paymentQR = qrData;
+      localData.paymentQR = data.data;
       fs.writeFileSync(DB_FILE, JSON.stringify(localData, null, 2), "utf-8");
-      console.log("[FIREBASE] Payment QR successfully restored from Google Cloud Firestore.");
+      console.log("[SUPABASE] Payment QR successfully restored from Supabase.");
     }
   } catch (error: any) {
-    console.error("[FIREBASE] Error restoring QR code from Google Cloud Firestore:", error.message);
+    console.error("[SUPABASE] Error restoring QR code from Supabase:", error.message);
   }
 }
 
