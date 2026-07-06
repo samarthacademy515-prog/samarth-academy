@@ -4,10 +4,10 @@ import fs from "fs";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 import cors from "cors";
-import { initializeApp, getApps } from "firebase-admin/app";
+import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 
-dotenv.config();
+dotenv.config({ override: true });
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -263,28 +263,51 @@ function writeDB(data: any) {
 }
 
 let dbFirestore: any = null;
+let firebaseInitializationChecked = false;
 
 function getFirestoreDb() {
-  if (!dbFirestore) {
-    try {
+  if (firebaseInitializationChecked) {
+    return dbFirestore;
+  }
+
+  try {
+    const serviceAccountVar = process.env.FIREBASE_SERVICE_ACCOUNT;
+    if (serviceAccountVar) {
+      console.log("[FIREBASE] Found FIREBASE_SERVICE_ACCOUNT environment variable. Initializing standard Firebase Admin SDK...");
+      const serviceAccount = JSON.parse(serviceAccountVar);
+      if (serviceAccount && typeof serviceAccount === 'object' && serviceAccount.private_key) {
+        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+      }
+      
+      if (getApps().length === 0) {
+        initializeApp({
+          credential: cert(serviceAccount)
+        });
+      }
+      
+      let dbId: string | undefined = undefined;
       const configPath = path.join(process.cwd(), "firebase-applet-config.json");
       if (fs.existsSync(configPath)) {
-        const firebaseConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-        
-        if (getApps().length === 0) {
-          initializeApp({
-            projectId: firebaseConfig.projectId,
-          });
+        try {
+          const firebaseConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+          dbId = firebaseConfig.firestoreDatabaseId;
+        } catch (err) {
+          console.warn("[FIREBASE] Could not read custom database ID from config:", err);
         }
-        const dbId = firebaseConfig.firestoreDatabaseId;
-        dbFirestore = dbId ? getFirestore(dbId) : getFirestore();
-        console.log("[FIREBASE] Initialized firebase-admin Firestore successfully.");
-      } else {
-        console.warn("[FIREBASE] firebase-applet-config.json not found!");
       }
-    } catch (error) {
-      console.error("[FIREBASE] Error initializing Firestore:", error);
+      
+      dbFirestore = dbId ? getFirestore(dbId) : getFirestore();
+      console.log("[FIREBASE] Centralized Firebase Admin SDK and Firestore successfully initialized via Service Account.");
+    } else {
+      console.warn("[FIREBASE] FIREBASE_SERVICE_ACCOUNT environment variable is not defined.");
+      console.log("Firebase unavailable. Running in local database mode.");
     }
+  } catch (error: any) {
+    console.error("[FIREBASE] Failed to initialize Firebase Admin SDK:", error.message || error);
+    console.log("Firebase unavailable. Running in local database mode.");
+    dbFirestore = null;
+  } finally {
+    firebaseInitializationChecked = true;
   }
   return dbFirestore;
 }
@@ -1392,10 +1415,6 @@ app.post("/api/notifications/read", (req, res) => {
 // --- VITE DEV / PRODUCTION MIDDLEWARE ---
 
 async function startServer() {
-  console.log("Triggering cloud database check and restore...");
-  await initialCloudRestore();
-  await restoreQrFromCloud();
-
   const isProd = process.env.NODE_ENV === "production";
   const distExists = fs.existsSync(path.join(process.cwd(), "dist"));
 
@@ -1418,6 +1437,17 @@ async function startServer() {
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Samarth Academy Server running on http://localhost:${PORT}`);
+    
+    // Trigger cloud database check and restore safely 3 seconds after server is fully started
+    setTimeout(async () => {
+      try {
+        console.log("[STARTUP] Triggering cloud database check and restore...");
+        await initialCloudRestore();
+        await restoreQrFromCloud();
+      } catch (err: any) {
+        console.error("[STARTUP] Error during deferred cloud restoration:", err.message || err);
+      }
+    }, 3000);
   });
 }
 
