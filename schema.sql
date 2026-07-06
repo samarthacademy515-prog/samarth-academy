@@ -50,19 +50,29 @@ CREATE TABLE IF NOT EXISTS user_profiles (
 
 -- 3. Students Table
 CREATE TABLE IF NOT EXISTS students (
-    id TEXT PRIMARY KEY, -- Supports 'STU-XXX' format or UUIDs
-    name TEXT NOT NULL,
+    id TEXT PRIMARY KEY DEFAULT uuid_generate_v4()::text,
+    login_code VARCHAR(7) UNIQUE NOT NULL,
+    student_name TEXT NOT NULL,
+    name TEXT NOT NULL, -- Compatibility column
+    phone VARCHAR(20) UNIQUE NOT NULL,
+    parent_name TEXT NOT NULL,
+    parent_phone VARCHAR(20),
     email TEXT,
-    phone TEXT,
-    login_code TEXT UNIQUE NOT NULL,
-    standard TEXT DEFAULT '10th Standard',
-    section TEXT DEFAULT 'School Section',
-    parent_name TEXT,
+    dob VARCHAR(20),
+    gender VARCHAR(10) DEFAULT 'Male',
+    class VARCHAR(100) DEFAULT '10th Standard',
+    standard VARCHAR(100) DEFAULT '10th Standard', -- Compatibility column
+    section VARCHAR(100) DEFAULT 'School Section', -- Compatibility column
+    batch VARCHAR(100) DEFAULT 'Regular',
     address TEXT,
-    total_fees NUMERIC DEFAULT 0,
-    paid_fees NUMERIC DEFAULT 0,
-    admission_date TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    admission_date VARCHAR(20),
+    profile_photo TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    total_fees NUMERIC DEFAULT 0, -- Compatibility column
+    paid_fees NUMERIC DEFAULT 0, -- Compatibility column
+    password TEXT, -- Compatibility column for hashed passwords
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 4. Teachers Table
@@ -347,6 +357,8 @@ CREATE POLICY "Allow public read access to study_material" ON study_material FOR
 -- INDEXES FOR QUERY OPTIMIZATION
 -- ==========================================
 CREATE INDEX IF NOT EXISTS idx_students_login_code ON students (login_code);
+CREATE INDEX IF NOT EXISTS idx_students_phone ON students (phone);
+CREATE INDEX IF NOT EXISTS idx_students_email ON students (email);
 CREATE INDEX IF NOT EXISTS idx_attendance_student_date ON attendance (student_id, date);
 CREATE INDEX IF NOT EXISTS idx_fee_logs_student ON fee_logs (student_id);
 CREATE INDEX IF NOT EXISTS idx_submissions_assignment ON assignment_submissions (assignment_id);

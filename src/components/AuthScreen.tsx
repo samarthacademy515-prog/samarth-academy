@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Lock, Unlock, ShieldCheck, BookOpen, GraduationCap, Users, 
   Mail, Chrome, ArrowRight, CheckCircle2, Sparkles, 
-  MessageCircle, Info, Search, HelpCircle, Phone, Globe, Trash2, Plus, ChevronRight
+  MessageCircle, Info, Search, HelpCircle, Phone, Globe, Trash2, Plus, ChevronRight,
+  MapPin, Calendar, User
 } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 import logoImage from "../assets/images/academy_logo_1782839442092.jpg";
@@ -81,6 +82,67 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
   const [searchPhone, setSearchPhone] = useState("");
   const [foundStudent, setFoundStudent] = useState<any | null>(null);
   const [finderLoading, setFinderLoading] = useState(false);
+
+  // New Self-Registration fields
+  const [regFullName, setRegFullName] = useState("");
+  const [regMobile, setRegMobile] = useState("");
+  const [regParentName, setRegParentName] = useState("");
+  const [regParentMobile, setRegParentMobile] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regStandard, setRegStandard] = useState("10th Standard");
+  const [regAddress, setRegAddress] = useState("");
+  const [regDOB, setRegDOB] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+
+  // Forgot Code States
+  const [showForgotView, setShowForgotView] = useState(false);
+  const [forgotPhone, setForgotPhone] = useState("");
+  const [forgotResult, setForgotResult] = useState<{
+    name: string;
+    standard: string;
+    phone: string;
+    loginCode: string;
+  } | null>(null);
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
+
+  // Countdown timer for automatic login redirect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (redirectCountdown !== null) {
+      if (redirectCountdown > 0) {
+        interval = setInterval(() => {
+          setRedirectCountdown((prev) => (prev !== null ? prev - 1 : null));
+        }, 1000);
+      } else {
+        setShowForgotView(false);
+        setForgotPhone("");
+        setRedirectCountdown(null);
+        if (forgotResult) {
+          setLoginCode(forgotResult.loginCode);
+        }
+        setForgotResult(null);
+      }
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [redirectCountdown, forgotResult]);
+
+  const allCourses = [
+    {
+      group: language === "marathi" ? "शालेय वर्ग (इयत्ता ४ थी ते १० वी)" : language === "hindi" ? "स्कूली शिक्षा (कक्षा 4 से 10)" : "School Standard (4th to 10th)",
+      items: [
+        "4th Standard", "5th Standard", "6th Standard", "7th Standard", "8th Standard", "9th Standard", "10th Standard"
+      ]
+    },
+    {
+      group: language === "marathi" ? "स्पर्धा परीक्षा" : language === "hindi" ? "प्रतियोगी परीक्षाएं" : "Competitive Government Exams",
+      items: [
+        "NMMS Exam", "Scholarship Exam", "Navodaya Exam", "MPSC Group B", "MPSC Group C", "Talathi Bharti", "Police Bharti", "ZP Recruitment", "Saral Seva"
+      ]
+    }
+  ];
 
   // Language selectors
   const languagesList = [
@@ -161,71 +223,120 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
     }
   };
 
-  const handleEmailSignUp = async (e: React.FormEvent) => {
+  const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) {
-      setErrorMsg(t("auth.enter_email_pass"));
+    if (!forgotPhone.trim() || !/^\d{10}$/.test(forgotPhone.trim())) {
+      setErrorMsg(language === "marathi" ? "कृपया वैध १०-अंकी मोबाईल नंबर टाका." : "Please enter a valid 10-digit mobile number.");
       return;
     }
+
+    setForgotLoading(true);
+    setErrorMsg(null);
+    setForgotResult(null);
+
+    try {
+      const response = await fetch(`${API}/api/auth/forgot-code`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: forgotPhone.trim() })
+      });
+
+      const data = await response.json();
+      if (!response.ok || data.success === false) {
+        throw new Error(data.error || (language === "marathi" ? "मोबाईल नंबर सापडला नाही." : "Mobile number not found."));
+      }
+
+      setForgotResult(data.student);
+      setRedirectCountdown(10); // Start 10 seconds countdown
+
+      if ("speechSynthesis" in window) {
+        try {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(
+            `Found. Your secure login code is ${data.student.loginCode}.`
+          );
+          window.speechSynthesis.speak(utterance);
+        } catch (e) {}
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || "An error occurred.");
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleNewRegistration = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!regFullName.trim()) {
+      setErrorMsg(language === "marathi" ? "विद्यार्थ्याचे नाव आवश्यक आहे." : "Full Name is required.");
+      return;
+    }
+    if (!regMobile.trim() || !/^\d{10}$/.test(regMobile.trim())) {
+      setErrorMsg(language === "marathi" ? "कृपया वैध १०-अंकी मोबाईल नंबर टाका." : "Please enter a valid 10-digit mobile number.");
+      return;
+    }
+    if (!regParentName.trim()) {
+      setErrorMsg(language === "marathi" ? "पालकांचे नाव आवश्यक आहे." : "Parent Name is required.");
+      return;
+    }
+    if (!regStandard.trim()) {
+      setErrorMsg(language === "marathi" ? "इयत्ता/वर्ग निवडणे आवश्यक आहे." : "Class/Standard selection is required.");
+      return;
+    }
+    if (!regAddress.trim()) {
+      setErrorMsg(language === "marathi" ? "पत्ता आवश्यक आहे." : "Address is required.");
+      return;
+    }
+    if (!regDOB.trim()) {
+      setErrorMsg(language === "marathi" ? "जन्मतारीख आवश्यक आहे." : "Date of Birth is required.");
+      return;
+    }
+
     setLoading(true);
     setErrorMsg(null);
-    
+    setSuccessMsg(null);
+
     try {
-      const response = await fetch(`${API}/api/auth/login`, {
+      const response = await fetch(`${API}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          loginType: "email",
-          email: email.trim(),
-          password: password
+          name: regFullName.trim(),
+          phone: regMobile.trim(),
+          parentName: regParentName.trim(),
+          parentPhone: regParentMobile.trim(),
+          email: regEmail.trim(),
+          standard: regStandard,
+          address: regAddress.trim(),
+          dob: regDOB,
+          password: regPassword
         })
       });
 
-      let data: any = {};
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        data = await response.json();
-      } else {
-        const text = await response.text();
-        console.error("Non-JSON Server Response Received during signup:", {
-          status: response.status,
-          statusText: response.statusText,
-          contentType: contentType,
-          bodySample: text.substring(0, 1000)
-        });
-        throw new Error(t("auth.invalid_server_resp"));
-      }
-
-      if (data.success === false) {
-        throw new Error(data.error || "Email registration failed.");
+      const data = await response.json();
+      if (!response.ok || data.success === false) {
+        throw new Error(data.error || "Registration failed.");
       }
 
       const confirmMsg = `Welcome ${data.user.name}! Registered Permanently! Student ID: ${data.user.studentId}, Login Code: ${data.user.loginCode}`;
       setSuccessMsg(confirmMsg);
 
-      // Auto say permanent registration details and credentials
       if ("speechSynthesis" in window) {
         try {
           window.speechSynthesis.cancel();
           const utterance = new SpeechSynthesisUtterance(
-            `Welcome to Samarth Academy, ${data.user.name}! Your permanent student ID is ${data.user.studentId}, and your seven digit login code is ${data.user.loginCode}. It is saved permanently. Please write it down.`
+            `Welcome to Samarth Academy, ${data.user.name}! Your secure seven digit login code is ${data.user.loginCode}.`
           );
-          utterance.rate = 0.9;
           window.speechSynthesis.speak(utterance);
-        } catch (speechErr) {
-          console.warn("Speech synthesis error:", speechErr);
-        }
-      }
-
-      if (data.user && data.user.email) {
-        saveAccountToDevice(data.user.name, data.user.email);
+        } catch (speechErr) {}
       }
 
       setTimeout(() => {
         onLoginSuccess(data.user);
       }, 3500);
+
     } catch (err: any) {
-      setErrorMsg(err.message || "ईमेल साइन अप अयशस्वी.");
+      setErrorMsg(err.message || "Registration failed.");
     } finally {
       setLoading(false);
     }
@@ -408,7 +519,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
         </AnimatePresence>
 
         {/* Login Type Tabs (Existing vs. New User) */}
-        {!showGoogleChooser && (
+        {!showGoogleChooser && !showForgotView && (
           <div className="grid grid-cols-2 border-b border-slate-800 bg-slate-950/50">
             <button
               onClick={() => { setActiveTab("existing"); setErrorMsg(null); }}
@@ -437,7 +548,161 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
 
         <div className="p-6">
           <AnimatePresence mode="wait">
-            {showGoogleChooser ? (
+            {showForgotView ? (
+              <motion.div
+                key="forgot-view"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="space-y-5"
+              >
+                {!forgotResult ? (
+                  <form onSubmit={handleForgotSubmit} className="space-y-4">
+                    <div className="text-center space-y-1">
+                      <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center justify-center gap-1.5">
+                        <Lock className="w-4 h-4 text-amber-500 animate-pulse" />
+                        {language === "marathi" ? "लॉगिन कोड शोधा" : language === "hindi" ? "लॉगिन कोड खोजें" : "Find Student Login Code"}
+                      </h3>
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        {language === "marathi" 
+                          ? "आपला लॉगिन कोड परत मिळवण्यासाठी नोंदणीकृत १०-अंकी मोबाईल नंबर टाका." 
+                          : "Enter your registered 10-digit mobile number to retrieve your login code."}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                        {language === "marathi" ? "नोंदणीकृत मोबाईल नंबर *" : "Registered Mobile Number *"}
+                      </label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-3 w-4 h-4 text-slate-600" />
+                        <input
+                          type="tel"
+                          required
+                          pattern="[0-9]{10}"
+                          maxLength={10}
+                          placeholder="e.g. 9511668617"
+                          value={forgotPhone}
+                          onChange={(e) => setForgotPhone(e.target.value.replace(/[^0-9]/g, ""))}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white font-mono focus:outline-none focus:border-amber-500 transition-colors"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={forgotLoading}
+                      className="w-full bg-gradient-to-r from-red-600 to-amber-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg hover:from-red-500 hover:to-amber-500 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-xs sm:text-sm uppercase tracking-wider"
+                    >
+                      {forgotLoading ? (
+                        <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                      ) : (
+                        <>
+                          <Search className="w-4 h-4" /> 
+                          {language === "marathi" ? "माझा लॉगिन कोड शोधा" : "Find My Login Code"}
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => { setShowForgotView(false); setErrorMsg(null); }}
+                      className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer text-xs uppercase"
+                    >
+                      {language === "marathi" ? "← लॉगिनवर परत जा" : "← Back to Login"}
+                    </button>
+                  </form>
+                ) : (
+                  <div className="space-y-5 text-center">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <div className="w-14 h-14 bg-emerald-500/10 border-2 border-emerald-500 rounded-full flex items-center justify-center text-emerald-400 animate-bounce">
+                        <CheckCircle2 className="w-8 h-8" />
+                      </div>
+                      <h3 className="text-base font-black text-emerald-400 uppercase tracking-wider">
+                        {language === "marathi" ? "लॉगिन कोड सापडला!" : "Login Code Found!"}
+                      </h3>
+                    </div>
+
+                    {/* Result Dashboard */}
+                    <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 text-left space-y-3.5 shadow-inner">
+                      <div className="border-b border-slate-850 pb-2 flex justify-between">
+                        <span className="text-[10px] text-slate-500 uppercase font-black tracking-wider">Student Details</span>
+                        <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-bold uppercase">VERIFIED</span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-y-2.5 gap-x-4 text-xs">
+                        <div>
+                          <span className="text-[10px] text-slate-500 block uppercase font-bold tracking-wide">Student Name</span>
+                          <span className="text-white font-bold block truncate">{forgotResult.name}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-500 block uppercase font-bold tracking-wide">Class / Batch</span>
+                          <span className="text-amber-400 font-bold block truncate">{forgotResult.standard}</span>
+                        </div>
+                        <div className="col-span-2 border-t border-slate-850 pt-2.5">
+                          <span className="text-[10px] text-slate-500 block uppercase font-bold tracking-wide">Registered Phone</span>
+                          <span className="text-slate-300 font-mono font-semibold block">{forgotResult.phone}</span>
+                        </div>
+                        <div className="col-span-2 bg-amber-500/5 border border-amber-500/20 p-4 rounded-xl text-center space-y-1">
+                          <span className="text-amber-500 block uppercase text-[10px] font-black tracking-wider">🔑 आपला ७-अंकी लॉगिन कोड (YOUR LOGIN CODE)</span>
+                          <span className="text-amber-400 font-mono text-2xl font-black tracking-widest block py-1">
+                            {forgotResult.loginCode}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2 pt-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(forgotResult.loginCode);
+                            alert(language === "marathi" ? "लॉगिन कोड क्लिपबोर्डवर कॉपी केला!" : "Login Code copied to clipboard!");
+                          }}
+                          className="flex-1 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-white text-xs font-bold py-2.5 px-3 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                        >
+                          {language === "marathi" ? "कोड कॉपी करा" : "Copy Code"}
+                        </button>
+
+                        <a
+                          href={`https://wa.me/91${forgotResult.phone}?text=${encodeURIComponent(
+                            `*समर्थ अकॅडमी - विद्यार्थी लॉगिन तपशील (Samarth Academy Student Login Info)*\n--------------------------------------------------\n*नाव (Name):* ${forgotResult.name}\n*वर्ग (Class):* ${forgotResult.standard}\n*मोबाईल (Mobile):* ${forgotResult.phone}\n*🔑 ७-अंकी लॉगिन कोड (Login Code):* *${forgotResult.loginCode}*\n--------------------------------------------------\nहा कोड वापरून आपण student किंवा parent म्हणून https://samarth-academy.in वर लॉगिन करू शकता.`
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 bg-emerald-600 hover:bg-emerald-550 text-white text-xs font-bold py-2.5 px-3 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          {language === "marathi" ? "WhatsApp वर पाठवा" : "Send WhatsApp"}
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* Countdown indicator */}
+                    <div className="text-[11px] text-slate-400 leading-none">
+                      {language === "marathi" 
+                        ? `१० सेकंदांनंतर स्वयंचलित रिडायरेक्ट: ` 
+                        : `Auto-redirecting in `}
+                      <span className="text-amber-500 font-extrabold font-mono text-xs">{redirectCountdown}s</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowForgotView(false);
+                        setForgotResult(null);
+                        setForgotPhone("");
+                        setLoginCode(forgotResult.loginCode);
+                        setRedirectCountdown(null);
+                      }}
+                      className="w-full bg-gradient-to-r from-red-600 to-amber-600 text-white font-bold py-2.5 px-4 rounded-xl shadow-lg hover:from-red-500 hover:to-amber-500 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs uppercase tracking-wider"
+                    >
+                      <ArrowRight className="w-4 h-4" /> {language === "marathi" ? "लॉगिन कडे जा" : "Go to Login"}
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+            ) : showGoogleChooser ? (
               <motion.div
                 key="google-chooser-view"
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -653,6 +918,18 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                         onChange={(e) => setLoginCode(e.target.value.replace(/[^0-9]/g, ""))}
                         className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-700 font-mono text-center tracking-widest focus:outline-none focus:border-amber-500 transition-colors"
                       />
+                      {selectedRole === "student" && (
+                        <div className="flex justify-end mt-2">
+                          <button
+                            type="button"
+                            onClick={() => { setShowForgotView(true); setErrorMsg(null); setForgotResult(null); setForgotPhone(""); }}
+                            className="text-[11px] text-amber-500 hover:text-amber-400 font-bold hover:underline transition-all cursor-pointer flex items-center gap-1"
+                          >
+                            <HelpCircle className="w-3.5 h-3.5" />
+                            {language === "marathi" ? "७-अंकी लॉगिन कोड विसरलात?" : language === "hindi" ? "लॉगिन कोड भूल गए?" : "Forgot Student Login Code?"}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div>
@@ -782,71 +1059,183 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
-                className="space-y-5"
+                className="space-y-4 max-h-[480px] overflow-y-auto pr-1.5 custom-scrollbar"
               >
                 <div className="text-center space-y-1">
                   <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center justify-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-amber-500" /> {t("auth.new_user_title")}
+                    <Sparkles className="w-4 h-4 text-amber-500" /> 
+                    {language === "marathi" ? "नवीन विद्यार्थी स्व-नोंदणी" : "Student Self-Registration"}
                   </h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    {t("auth.new_user_desc")}
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    {language === "marathi" 
+                      ? "समर्थ अकॅडमी मध्ये प्रवेश घेण्यासाठी खालील माहिती काळजीपूर्वक भरा." 
+                      : "Fill in your details carefully to register in Samarth Academy."}
                   </p>
                 </div>
 
-                {/* Google Sign In Button */}
-                <button
-                  type="button"
-                  onClick={handleGoogleSignIn}
-                  disabled={isGoogleSigning}
-                  className="w-full bg-white hover:bg-slate-50 text-slate-900 font-bold py-2.5 px-4 rounded-xl border border-slate-200 transition-all flex items-center justify-center gap-2.5 shadow-sm hover:shadow cursor-pointer text-xs sm:text-sm"
-                >
-                  {isGoogleSigning ? (
-                    <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-900"></span>
-                  ) : (
-                    <>
-                      <Chrome className="w-4 h-4 text-red-500" /> {t("auth.google_btn")}
-                    </>
-                  )}
-                </button>
-
-                {/* Separator Line */}
-                <div className="relative flex py-1 items-center">
-                  <div className="flex-grow border-t border-slate-800"></div>
-                  <span className="flex-shrink mx-4 text-slate-500 text-[10px] uppercase font-black tracking-wider">{t("auth.email_or")}</span>
-                  <div className="flex-grow border-t border-slate-800"></div>
-                </div>
-
-                {/* Email Registration form */}
-                <form onSubmit={handleEmailSignUp} className="space-y-3.5">
+                {/* Self Registration form */}
+                <form onSubmit={handleNewRegistration} className="space-y-3.5">
+                  {/* Full Name */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-                      {t("auth.email_label")} *
+                    <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                      {language === "marathi" ? "विद्यार्थ्याचे पूर्ण नाव *" : "Student Full Name *"}
                     </label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-3 w-4 h-4 text-slate-600" />
+                      <User className="absolute left-3 top-2.5 w-4 h-4 text-slate-600" />
                       <input
-                        type="email"
+                        type="text"
                         required
-                        placeholder="E.g. student@gmail.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder={language === "marathi" ? "उदा. ओमकार रमेश चव्हाण" : "E.g. Omkar Ramesh Chavan"}
+                        value={regFullName}
+                        onChange={(e) => setRegFullName(e.target.value)}
                         className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
                       />
                     </div>
                   </div>
 
+                  {/* Mobile Number */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-                      {t("auth.pass_label")} *
+                    <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                      {language === "marathi" ? "मोबाईल क्रमांक (लॉगिनसाठी वापरला जाईल) *" : "Mobile Number (Used for login) *"}
                     </label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-3 w-4 h-4 text-slate-600" />
+                      <Phone className="absolute left-3 top-2.5 w-4 h-4 text-slate-600" />
+                      <input
+                        type="tel"
+                        required
+                        pattern="[0-9]{10}"
+                        maxLength={10}
+                        placeholder={language === "marathi" ? "१०-अंकी मोबाईल नंबर" : "10-digit mobile number"}
+                        value={regMobile}
+                        onChange={(e) => setRegMobile(e.target.value.replace(/[^0-9]/g, ""))}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500 transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Parent Name */}
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                      {language === "marathi" ? "पालकांचे नाव *" : "Parent Name *"}
+                    </label>
+                    <div className="relative">
+                      <Users className="absolute left-3 top-2.5 w-4 h-4 text-slate-600" />
+                      <input
+                        type="text"
+                        required
+                        placeholder={language === "marathi" ? "उदा. रमेश चव्हाण" : "E.g. Ramesh Chavan"}
+                        value={regParentName}
+                        onChange={(e) => setRegParentName(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Parent Mobile & Email side by side */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                        {language === "marathi" ? "पालकांचा मोबाईल (पर्यायी)" : "Parent Mobile (Optional)"}
+                      </label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-2.5 w-4 h-4 text-slate-600" />
+                        <input
+                          type="tel"
+                          pattern="[0-9]{10}"
+                          maxLength={10}
+                          placeholder="e.g. 9876543210"
+                          value={regParentMobile}
+                          onChange={(e) => setRegParentMobile(e.target.value.replace(/[^0-9]/g, ""))}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-sm text-white font-mono focus:outline-none focus:border-amber-500 transition-colors"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                        {language === "marathi" ? "ईमेल आयडी (पर्यायी)" : "Email (Optional)"}
+                      </label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-2.5 w-4 h-4 text-slate-600" />
+                        <input
+                          type="email"
+                          placeholder="student@gmail.com"
+                          value={regEmail}
+                          onChange={(e) => setRegEmail(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Standard & Date of Birth side by side */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                        {language === "marathi" ? "इयत्ता / वर्ग *" : "Standard / Class *"}
+                      </label>
+                      <select
+                        value={regStandard}
+                        onChange={(e) => setRegStandard(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                      >
+                        {allCourses.map((grp) => (
+                          <optgroup key={grp.group} label={grp.group} className="bg-slate-900 text-slate-300 font-bold">
+                            {grp.items.map((item) => (
+                              <option key={item} value={item} className="bg-slate-950 text-white font-normal">{item}</option>
+                            ))}
+                          </optgroup>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                        {language === "marathi" ? "जन्मतारीख *" : "Date of Birth *"}
+                      </label>
+                      <div className="relative">
+                        <Calendar className="absolute left-3 top-2.5 w-4 h-4 text-slate-600" />
+                        <input
+                          type="date"
+                          required
+                          value={regDOB}
+                          onChange={(e) => setRegDOB(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Address */}
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                      {language === "marathi" ? "पत्ता *" : "Address *"}
+                    </label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-2.5 w-4 h-4 text-slate-600" />
+                      <input
+                        type="text"
+                        required
+                        placeholder={language === "marathi" ? "उदा. सिंचन नगर, परभणी" : "E.g. Sinchan Nagar, Parbhani"}
+                        value={regAddress}
+                        onChange={(e) => setRegAddress(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Password */}
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                      {language === "marathi" ? "पासवर्ड (पर्यायी)" : "Password (Optional)"}
+                    </label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-2.5 w-4 h-4 text-slate-600" />
                       <input
                         type="password"
-                        required
                         placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        value={regPassword}
+                        onChange={(e) => setRegPassword(e.target.value)}
                         className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
                       />
                     </div>
@@ -855,13 +1244,14 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-xs sm:text-sm uppercase tracking-wider"
+                    className="w-full bg-gradient-to-r from-red-600 to-amber-600 text-white font-bold py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-xs sm:text-sm uppercase tracking-wider font-bold shadow-md hover:shadow-lg"
                   >
                     {loading ? (
                       <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
                     ) : (
                       <>
-                        <Mail className="w-4 h-4 text-amber-500" /> {t("auth.register_btn")}
+                        <Sparkles className="w-4 h-4 text-amber-300" /> 
+                        {language === "marathi" ? "नोंदणी पूर्ण करा (Register)" : "Complete Registration"}
                       </>
                     )}
                   </button>

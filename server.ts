@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 import cors from "cors";
 import { createClient } from "@supabase/supabase-js";
+import crypto from "crypto";
 
 dotenv.config({ override: true });
 
@@ -304,6 +305,189 @@ function getSupabaseClient() {
   return supabaseAdmin;
 }
 
+// Helper to map Supabase student row to standard student object
+function mapSupabaseStudent(student: any) {
+  if (!student) return null;
+  return {
+    id: student.id,
+    name: student.student_name || student.name,
+    student_name: student.student_name || student.name,
+    email: student.email || "",
+    phone: student.phone || "",
+    loginCode: student.login_code,
+    login_code: student.login_code,
+    standard: student.class || student.standard || "10th Standard",
+    class: student.class || student.standard || "10th Standard",
+    section: student.section || "School Section",
+    parentName: student.parent_name || "",
+    parent_name: student.parent_name || "",
+    parentPhone: student.parent_phone || "",
+    parent_phone: student.parent_phone || "",
+    address: student.address || "",
+    dob: student.dob || "",
+    gender: student.gender || "Male",
+    batch: student.batch || "Regular",
+    profilePhoto: student.profile_photo || "",
+    profile_photo: student.profile_photo || "",
+    isActive: student.is_active !== false,
+    is_active: student.is_active !== false,
+    admissionDate: student.admission_date || new Date().toISOString().split("T")[0],
+    admission_date: student.admission_date || new Date().toISOString().split("T")[0],
+    password: student.password || "",
+    totalFees: Number(student.total_fees || 15000),
+    total_fees: Number(student.total_fees || 15000),
+    paidFees: Number(student.paid_fees || 0),
+    paid_fees: Number(student.paid_fees || 0),
+    attendance: student.attendance || {}
+  };
+}
+
+async function getSupabaseStudentByCode(code: string) {
+  const supabase = getSupabaseClient();
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("students")
+    .select("*")
+    .eq("login_code", code.trim())
+    .maybeSingle();
+  if (error) {
+    console.error("[SUPABASE] Error fetching student by code:", error.message);
+    return null;
+  }
+  return data ? mapSupabaseStudent(data) : null;
+}
+
+async function getSupabaseStudentByPhone(phone: string) {
+  const supabase = getSupabaseClient();
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("students")
+    .select("*")
+    .eq("phone", phone.trim())
+    .maybeSingle();
+  if (error) {
+    console.error("[SUPABASE] Error fetching student by phone:", error.message);
+    return null;
+  }
+  return data ? mapSupabaseStudent(data) : null;
+}
+
+async function insertSupabaseStudent(student: any) {
+  const supabase = getSupabaseClient();
+  if (!supabase) return null;
+  
+  const payload = {
+    id: student.id || crypto.randomUUID(),
+    login_code: student.loginCode || student.login_code,
+    student_name: student.name || student.student_name,
+    name: student.name || student.student_name,
+    phone: student.phone,
+    parent_name: student.parentName || student.parent_name,
+    parent_phone: student.parentPhone || student.parent_phone,
+    email: student.email || "",
+    dob: student.dob,
+    gender: student.gender || "Male",
+    class: student.standard || student.class || "10th Standard",
+    standard: student.standard || student.class || "10th Standard",
+    section: student.section || "School Section",
+    batch: student.batch || "Regular",
+    address: student.address,
+    admission_date: student.admissionDate || student.admission_date || new Date().toISOString().split("T")[0],
+    profile_photo: student.profilePhoto || student.profile_photo || "",
+    is_active: student.isActive !== false && student.is_active !== false,
+    total_fees: Number(student.totalFees || student.total_fees || 15000),
+    paid_fees: Number(student.paidFees || student.paid_fees || 0),
+    password: student.password || "",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  const { data, error } = await supabase
+    .from("students")
+    .insert(payload)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[SUPABASE] Error inserting student:", error.message);
+    throw error;
+  }
+  return mapSupabaseStudent(data);
+}
+
+async function updateSupabaseStudent(id: string, updates: any) {
+  const supabase = getSupabaseClient();
+  if (!supabase) return null;
+
+  const payload: any = {};
+  if (updates.name || updates.student_name) {
+    payload.student_name = updates.name || updates.student_name;
+    payload.name = updates.name || updates.student_name;
+  }
+  if (updates.phone) payload.phone = updates.phone;
+  if (updates.parentName || updates.parent_name) {
+    payload.parent_name = updates.parentName || updates.parent_name;
+  }
+  if (updates.parentPhone || updates.parent_phone) {
+    payload.parent_phone = updates.parentPhone || updates.parent_phone;
+  }
+  if (updates.email !== undefined) payload.email = updates.email;
+  if (updates.dob) payload.dob = updates.dob;
+  if (updates.gender) payload.gender = updates.gender;
+  if (updates.standard || updates.class) {
+    payload.class = updates.standard || updates.class;
+    payload.standard = updates.standard || updates.class;
+  }
+  if (updates.section) payload.section = updates.section;
+  if (updates.batch) payload.batch = updates.batch;
+  if (updates.address) payload.address = updates.address;
+  if (updates.admissionDate || updates.admission_date) {
+    payload.admission_date = updates.admissionDate || updates.admission_date;
+  }
+  if (updates.profilePhoto || updates.profile_photo) {
+    payload.profile_photo = updates.profilePhoto || updates.profile_photo;
+  }
+  if (updates.isActive !== undefined || updates.is_active !== undefined) {
+    payload.is_active = updates.isActive !== false && updates.is_active !== false;
+  }
+  if (updates.password !== undefined) payload.password = updates.password;
+  if (updates.totalFees !== undefined || updates.total_fees !== undefined) {
+    payload.total_fees = Number(updates.totalFees !== undefined ? updates.totalFees : updates.total_fees);
+  }
+  if (updates.paidFees !== undefined || updates.paid_fees !== undefined) {
+    payload.paid_fees = Number(updates.paidFees !== undefined ? updates.paidFees : updates.paid_fees);
+  }
+  
+  payload.updated_at = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("students")
+    .update(payload)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[SUPABASE] Error updating student:", error.message);
+    throw error;
+  }
+  return mapSupabaseStudent(data);
+}
+
+async function deleteSupabaseStudent(id: string) {
+  const supabase = getSupabaseClient();
+  if (!supabase) return false;
+  const { error } = await supabase
+    .from("students")
+    .delete()
+    .eq("id", id);
+  if (error) {
+    console.error("[SUPABASE] Error deleting student:", error.message);
+    throw error;
+  }
+  return true;
+}
+
 const KEYS_TO_SYNC = [
   "students",
   "feeLogs",
@@ -559,7 +743,7 @@ app.post("/api/login-history/clear", (req, res) => {
 });
 
 // Auth Login API
-app.post("/api/auth/login", (req, res) => {
+app.post("/api/auth/login", async (req, res) => {
   try {
     const { role, loginCode, passcode, email, loginType } = req.body || {};
     const db = readDB();
@@ -569,16 +753,33 @@ app.post("/api/auth/login", (req, res) => {
     if (loginType === "google" || loginType === "email") {
       // New User Sign Up / Login via Google or Email
       const emailVal = email?.trim().toLowerCase() || "google-user@gmail.com";
-      let student = (db.students || []).find((s: any) => s.email?.trim().toLowerCase() === emailVal);
-      let isNewUser = false;
+      let student = null;
+      try {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          const { data, error } = await supabase
+            .from("students")
+            .select("*")
+            .eq("email", emailVal)
+            .maybeSingle();
+          if (!error && data) {
+            student = mapSupabaseStudent(data);
+          }
+        }
+      } catch (e) {}
+
+      if (!student) {
+        student = (db.students || []).find((s: any) => s.email?.trim().toLowerCase() === emailVal);
+      }
       
+      let isNewUser = false;
       if (!student) {
         isNewUser = true;
         const code = Math.floor(1000000 + Math.random() * 9000000).toString();
         const studentName = emailVal.split("@")[0];
         const formattedName = studentName.split(/[\._\-]/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-        student = {
-          id: `STU-${Math.floor(100 + Math.random() * 900)}`,
+        const newStudentData = {
+          id: crypto.randomUUID(),
           name: formattedName,
           email: emailVal,
           phone: "9511668617", // Default placeholder
@@ -592,6 +793,13 @@ app.post("/api/auth/login", (req, res) => {
           attendance: {},
           admissionDate: new Date().toISOString().split("T")[0]
         };
+        try {
+          student = await insertSupabaseStudent(newStudentData);
+        } catch (err) {
+          student = newStudentData;
+        }
+        
+        db.students = db.students || [];
         db.students.push(student);
       }
 
@@ -651,7 +859,15 @@ app.post("/api/auth/login", (req, res) => {
     }
 
     if (role === "student") {
-      const student = (db.students || []).find((s: any) => s.loginCode === loginCode);
+      let student = null;
+      try {
+        student = await getSupabaseStudentByCode(loginCode);
+      } catch (e) {}
+
+      if (!student) {
+        student = (db.students || []).find((s: any) => s.loginCode === loginCode);
+      }
+
       if (student) {
         db.loginHistory = db.loginHistory || [];
         db.loginHistory.unshift({
@@ -681,7 +897,15 @@ app.post("/api/auth/login", (req, res) => {
 
     if (role === "parent") {
       // Parent can login with child's login code or parent phone
-      const student = (db.students || []).find((s: any) => s.loginCode === loginCode || s.phone === loginCode);
+      let student = null;
+      try {
+        student = await getSupabaseStudentByCode(loginCode) || await getSupabaseStudentByPhone(loginCode);
+      } catch (e) {}
+
+      if (!student) {
+        student = (db.students || []).find((s: any) => s.loginCode === loginCode || s.phone === loginCode);
+      }
+
       if (student) {
         db.loginHistory = db.loginHistory || [];
         db.loginHistory.unshift({
@@ -716,67 +940,348 @@ app.post("/api/auth/login", (req, res) => {
   }
 });
 
-// 3. Students operations
-app.get("/api/students", (req, res) => {
-  const db = readDB();
-  res.json(db.students);
-});
+// Auth Register API
+app.post("/api/auth/register", async (req, res) => {
+  try {
+    const { name, phone, parentName, parentPhone, email, standard, address, dob, password } = req.body || {};
+    
+    // Server-side validation
+    if (!name?.trim()) {
+      return res.status(400).json({ success: false, error: "विद्यार्थ्याचे नाव आवश्यक आहे. (Student Name is required.)" });
+    }
+    if (!phone?.trim() || !/^\d{10}$/.test(phone.trim())) {
+      return res.status(400).json({ success: false, error: "कृपया वैध १०-अंकी मोबाईल नंबर टाका. (Please enter a valid 10-digit mobile number.)" });
+    }
+    if (!parentName?.trim()) {
+      return res.status(400).json({ success: false, error: "पालकांचे नाव आवश्यक आहे. (Parent Name is required.)" });
+    }
+    if (!standard?.trim()) {
+      return res.status(400).json({ success: false, error: "इयत्ता/वर्ग निवडणे आवश्यक आहे. (Class/Standard selection is required.)" });
+    }
+    if (!address?.trim()) {
+      return res.status(400).json({ success: false, error: "पत्ता आवश्यक आहे. (Address is required.)" });
+    }
+    if (!dob?.trim()) {
+      return res.status(400).json({ success: false, error: "जन्मतारीख आवश्यक आहे. (Date of Birth is required.)" });
+    }
 
-app.post("/api/students", (req, res) => {
-  const db = readDB();
-  const code = Math.floor(1000000 + Math.random() * 9000000).toString();
-  const newStudent = {
-    id: `STU-${Math.floor(100 + Math.random() * 900)}`,
-    attendance: {},
-    paidFees: 0,
-    loginCode: code,
-    ...req.body,
-    admissionDate: new Date().toISOString().split("T")[0]
-  };
+    const db = readDB();
 
-  // Generate automated WhatsApp Guidance Log
-  const guidanceMsg = `प्रिय ${newStudent.name}, आपले समर्थ अकॅडमी मध्ये स्वागत आहे! आपला ७-अंकी सुरक्षित लॉगिन कोड आहे: *${code}*. हा कोड वापरून आपण https://samarth-academy.in वर Student किंवा Parent म्हणून लॉगिन करू शकता. अभ्यासक्रम, थेट वर्ग व प्रगती पाहण्यासाठी हा कोड नेहमी वापरावा. - समर्थ अकॅडमी, परभणी.`;
+    // Check for duplicate phone number in Supabase first
+    let phoneExists = false;
+    try {
+      const existing = await getSupabaseStudentByPhone(phone);
+      phoneExists = !!existing;
+    } catch (e) {}
 
-  const whatsappLog = {
-    id: `WA-${Math.floor(100000 + Math.random() * 900000)}`,
-    studentId: newStudent.id,
-    studentName: newStudent.name,
-    phone: newStudent.phone,
-    loginCode: code,
-    message: guidanceMsg,
-    sentAt: new Date().toISOString(),
-    status: "Delivered ✔"
-  };
+    if (!phoneExists) {
+      phoneExists = (db.students || []).some(
+        (s: any) => s.phone?.trim() === phone.trim()
+      );
+    }
 
-  db.whatsappLogs = db.whatsappLogs || [];
-  db.whatsappLogs.unshift(whatsappLog);
+    if (phoneExists) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "हा मोबाईल नंबर आधीच नोंदणीकृत आहे! (This mobile number is already registered!)" 
+      });
+    }
 
-  db.students.push(newStudent);
-  writeDB(db);
-  res.status(201).json(newStudent);
-});
+    // Generate unique 7-digit student login code
+    let loginCode = "";
+    let codeExists = true;
+    while (codeExists) {
+      loginCode = Math.floor(1000000 + Math.random() * 9000000).toString();
+      let existsInSupabase = false;
+      try {
+        const existing = await getSupabaseStudentByCode(loginCode);
+        existsInSupabase = !!existing;
+      } catch (e) {}
+      
+      codeExists = existsInSupabase || (db.students || []).some((s: any) => s.loginCode === loginCode);
+    }
 
-app.put("/api/students/:id", (req, res) => {
-  const db = readDB();
-  const index = db.students.findIndex((s: any) => s.id === req.params.id);
-  if (index !== -1) {
-    db.students[index] = { ...db.students[index], ...req.body };
+    // Determine section
+    const schoolStandards = [
+      "4th Standard", "5th Standard", "6th Standard", 
+      "7th Standard", "8th Standard", "9th Standard", "10th Standard"
+    ];
+    const isSchool = schoolStandards.some(s => standard.includes(s));
+    const section = isSchool ? "School Section" : "Competitive Exams";
+
+    // Determine total tuition fee
+    let totalFees = 15000;
+    if (standard.includes("MPSC")) totalFees = 22000;
+    else if (standard.includes("Navodaya")) totalFees = 12000;
+    else if (standard.includes("Scholarship")) totalFees = 8000;
+    else if (standard.includes("NMMS")) totalFees = 6000;
+    else if (standard.includes("Police")) totalFees = 18000;
+    else if (standard.includes("Talathi") || standard.includes("Saral")) totalFees = 14000;
+    else if (standard.includes("10th")) totalFees = 15000;
+    else totalFees = 10000;
+
+    const newStudentData = {
+      id: crypto.randomUUID(),
+      name: name.trim(),
+      phone: phone.trim(),
+      parentName: parentName.trim(),
+      parentPhone: parentPhone ? parentPhone.trim() : "",
+      email: email ? email.trim() : "",
+      standard: standard,
+      section: section,
+      address: address.trim(),
+      dob: dob,
+      password: password || "",
+      loginCode: loginCode,
+      totalFees: totalFees,
+      paidFees: 0,
+      attendance: {},
+      admissionDate: new Date().toISOString().split("T")[0]
+    };
+
+    let newStudent = null;
+    try {
+      newStudent = await insertSupabaseStudent(newStudentData);
+    } catch (err) {
+      newStudent = {
+        ...newStudentData,
+        createdAt: new Date().toISOString()
+      };
+    }
+
+    // Auto generate WhatsApp Guidance Log
+    const guidanceMsg = `प्रिय ${newStudent.name}, आपले समर्थ अकॅडमी मध्ये स्वागत आहे! आपला ७-अंकी सुरक्षित लॉगिन कोड आहे: *${loginCode}*. हा कोड वापरून आपण https://samarth-academy.in वर Student किंवा Parent म्हणून लॉगिन करू शकता. अभ्यासक्रम, थेट वर्ग व प्रगती पाहण्यासाठी हा कोड नेहमी वापरावा. - समर्थ अकॅडमी, परभणी.`;
+
+    const whatsappLog = {
+      id: `WA-${Math.floor(100000 + Math.random() * 900000)}`,
+      studentId: newStudent.id,
+      studentName: newStudent.name,
+      phone: newStudent.phone,
+      loginCode: loginCode,
+      message: guidanceMsg,
+      sentAt: new Date().toISOString(),
+      status: "Delivered ✔"
+    };
+
+    db.whatsappLogs = db.whatsappLogs || [];
+    db.whatsappLogs.unshift(whatsappLog);
+
+    db.students = db.students || [];
+    db.students.push(newStudent);
+
+    // Add to login history
+    db.loginHistory = db.loginHistory || [];
+    db.loginHistory.unshift({
+      id: `LH-${Math.floor(1000 + Math.random() * 9000)}`,
+      studentId: newStudent.id,
+      studentName: newStudent.name,
+      role: "student",
+      timestamp: new Date().toISOString(),
+      method: "self_registration"
+    });
+
     writeDB(db);
-    res.json(db.students[index]);
-  } else {
-    res.status(404).json({ error: "Student not found" });
+
+    res.status(201).json({
+      success: true,
+      user: {
+        role: "student",
+        name: newStudent.name,
+        email: newStudent.email,
+        studentId: newStudent.id,
+        loginCode: newStudent.loginCode,
+        isNewUser: true,
+        studentDetails: newStudent
+      }
+    });
+
+  } catch (err: any) {
+    console.error("CRITICAL ERROR IN REGISTER ROUTE:", err);
+    res.status(500).json({ success: false, error: "सर्व्हरमध्ये त्रुटी आली: " + (err.message || "Unknown error") });
   }
 });
 
-app.delete("/api/students/:id", (req, res) => {
+// Rate limiting map for forgot-code requests
+const forgotCodeRateLimits = new Map<string, { count: number, lastRequest: number }>();
+
+// Auth Forgot Student Login Code API
+app.post("/api/auth/forgot-code", async (req, res) => {
+  try {
+    const { phone } = req.body || {};
+
+    if (!phone?.trim() || !/^\d{10}$/.test(phone.trim())) {
+      return res.status(400).json({ success: false, error: "कृपया वैध १०-अंकी मोबाईल नंबर टाका. (Please enter a valid 10-digit mobile number.)" });
+    }
+
+    // Rate limiting & brute force protection
+    const clientIp = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+    const now = Date.now();
+    const limitInfo = forgotCodeRateLimits.get(clientIp as string);
+
+    if (limitInfo) {
+      if (now - limitInfo.lastRequest < 5000) { // Limit to 1 request every 5 seconds
+        return res.status(429).json({ success: false, error: "खूप जास्त विनंत्या! कृपया ५ सेकंद थांबा. (Too many requests! Please wait 5 seconds.)" });
+      }
+      if (now - limitInfo.lastRequest > 60000) {
+        forgotCodeRateLimits.set(clientIp as string, { count: 1, lastRequest: now });
+      } else {
+        if (limitInfo.count >= 5) { // Max 5 requests per minute
+          return res.status(429).json({ success: false, error: "प्रवेश मर्यादेपेक्षा जास्त विनंत्या! कृपया १ मिनिट थांबा. (Rate limit exceeded! Please wait 1 minute.)" });
+        }
+        forgotCodeRateLimits.set(clientIp as string, { count: limitInfo.count + 1, lastRequest: now });
+      }
+    } else {
+      forgotCodeRateLimits.set(clientIp as string, { count: 1, lastRequest: now });
+    }
+
+    const db = readDB();
+    
+    let student = null;
+    try {
+      student = await getSupabaseStudentByPhone(phone);
+    } catch (e) {}
+
+    if (!student) {
+      student = (db.students || []).find(
+        (s: any) => s.phone?.trim() === phone.trim()
+      );
+    }
+
+    if (!student) {
+      return res.status(404).json({ 
+        success: false, 
+        error: "या मोबाईल नंबरवर कोणताही विद्यार्थी नोंदणीकृत नाही. (No student is registered with this mobile number.)" 
+      });
+    }
+
+    res.json({
+      success: true,
+      student: {
+        name: student.name,
+        standard: student.standard,
+        phone: student.phone,
+        loginCode: student.loginCode
+      }
+    });
+
+  } catch (err: any) {
+    console.error("CRITICAL ERROR IN FORGOT CODE ROUTE:", err);
+    res.status(500).json({ success: false, error: "सर्व्हरमध्ये त्रुटी आली: " + (err.message || "Unknown error") });
+  }
+});
+
+// 3. Students operations
+app.get("/api/students", async (req, res) => {
+  try {
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      const { data, error } = await supabase
+        .from("students")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (!error && data) {
+        const list = data.map(mapSupabaseStudent);
+        return res.json(list);
+      }
+    }
+  } catch (e) {}
+
   const db = readDB();
-  const initialCount = db.students.length;
-  db.students = db.students.filter((s: any) => s.id !== req.params.id);
-  if (db.students.length < initialCount) {
+  res.json(db.students || []);
+});
+
+app.post("/api/students", async (req, res) => {
+  try {
+    const db = readDB();
+    const code = Math.floor(1000000 + Math.random() * 9000000).toString();
+    const newStudentData = {
+      id: crypto.randomUUID(),
+      attendance: {},
+      paidFees: 0,
+      loginCode: code,
+      ...req.body,
+      admissionDate: new Date().toISOString().split("T")[0]
+    };
+
+    let newStudent = null;
+    try {
+      newStudent = await insertSupabaseStudent(newStudentData);
+    } catch (err) {
+      newStudent = {
+        ...newStudentData,
+        createdAt: new Date().toISOString()
+      };
+    }
+
+    // Generate automated WhatsApp Guidance Log
+    const guidanceMsg = `प्रिय ${newStudent.name}, आपले समर्थ अकॅडमी मध्ये स्वागत आहे! आपला ७-अंकी सुरक्षित लॉगिन कोड आहे: *${code}*. हा कोड वापरून आपण https://samarth-academy.in वर Student किंवा Parent म्हणून लॉगिन करू शकता. अभ्यासक्रम, थेट वर्ग व प्रगती पाहण्यासाठी हा कोड नेहमी वापरावा. - समर्थ अकॅडमी, परभणी.`;
+
+    const whatsappLog = {
+      id: `WA-${Math.floor(100000 + Math.random() * 900000)}`,
+      studentId: newStudent.id,
+      studentName: newStudent.name,
+      phone: newStudent.phone,
+      loginCode: code,
+      message: guidanceMsg,
+      sentAt: new Date().toISOString(),
+      status: "Delivered ✔"
+    };
+
+    db.whatsappLogs = db.whatsappLogs || [];
+    db.whatsappLogs.unshift(whatsappLog);
+
+    db.students = db.students || [];
+    db.students.push(newStudent);
     writeDB(db);
-    res.json({ success: true, message: "Student deleted" });
-  } else {
-    res.status(404).json({ error: "Student not found" });
+    res.status(201).json(newStudent);
+  } catch (err: any) {
+    console.error("[POST /api/students ERROR]", err);
+    res.status(500).json({ error: "Failed to create student: " + err.message });
+  }
+});
+
+app.put("/api/students/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    let updatedStudent = null;
+    try {
+      updatedStudent = await updateSupabaseStudent(id, req.body);
+    } catch (err) {}
+
+    const db = readDB();
+    const index = db.students.findIndex((s: any) => s.id === id);
+    if (index !== -1) {
+      db.students[index] = { ...db.students[index], ...req.body, ...(updatedStudent || {}) };
+      writeDB(db);
+      res.json(db.students[index]);
+    } else if (updatedStudent) {
+      res.json(updatedStudent);
+    } else {
+      res.status(404).json({ error: "Student not found" });
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to update student: " + err.message });
+  }
+});
+
+app.delete("/api/students/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    try {
+      await deleteSupabaseStudent(id);
+    } catch (err) {}
+
+    const db = readDB();
+    const initialCount = db.students.length;
+    db.students = db.students.filter((s: any) => s.id !== id);
+    if (db.students.length < initialCount) {
+      writeDB(db);
+      res.json({ success: true, message: "Student deleted" });
+    } else {
+      res.status(404).json({ error: "Student not found" });
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to delete student: " + err.message });
   }
 });
 
@@ -1441,6 +1946,399 @@ app.post("/api/notifications/read", (req, res) => {
   }
 });
 
+
+// ==========================================
+// STUDENT ERP SPECIFIC ENDPOINTS (SUPABASE)
+// ==========================================
+
+// 1. POST /api/student/register - Register a new student directly in Supabase
+app.post("/api/student/register", async (req, res) => {
+  try {
+    const { 
+      student_name, name, phone, parent_name, parentName, parent_phone, parentPhone, 
+      email, dob, gender, class: className, standard, batch, address, admission_date, admissionDate, password, profile_photo 
+    } = req.body || {};
+
+    const finalName = (student_name || name || "").trim();
+    const finalPhone = (phone || "").trim();
+    const finalParentName = (parent_name || parentName || "").trim();
+    const finalParentPhone = (parent_phone || parentPhone || "").trim();
+    const finalEmail = (email || "").trim();
+    const finalDob = (dob || "").trim();
+    const finalGender = (gender || "Male").trim();
+    const finalClass = (className || standard || "10th Standard").trim();
+    const finalBatch = (batch || "Regular").trim();
+    const finalAddress = (address || "").trim();
+    const finalAdmissionDate = (admission_date || admissionDate || new Date().toISOString().split("T")[0]).trim();
+    const finalPassword = (password || "").trim();
+    const finalProfilePhoto = (profile_photo || "").trim();
+
+    if (!finalName) {
+      return res.status(400).json({ success: false, error: "Student Name is required." });
+    }
+    if (!finalPhone || !/^\d{10}$/.test(finalPhone)) {
+      return res.status(400).json({ success: false, error: "Please enter a valid 10-digit Indian mobile number." });
+    }
+    if (!finalParentName) {
+      return res.status(400).json({ success: false, error: "Parent Name is required." });
+    }
+    if (!finalClass) {
+      return res.status(400).json({ success: false, error: "Class/Standard is required." });
+    }
+    if (!finalAddress) {
+      return res.status(400).json({ success: false, error: "Address is required." });
+    }
+    if (!finalDob) {
+      return res.status(400).json({ success: false, error: "Date of Birth is required." });
+    }
+
+    // Check for duplicate phone number
+    const existingStudent = await getSupabaseStudentByPhone(finalPhone);
+    if (existingStudent) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "This mobile number is already registered!" 
+      });
+    }
+
+    // Generate unique 7-digit student login code
+    let loginCode = "";
+    let codeExists = true;
+    while (codeExists) {
+      loginCode = Math.floor(1000000 + Math.random() * 9000000).toString();
+      const existingByCode = await getSupabaseStudentByCode(loginCode);
+      codeExists = !!existingByCode;
+    }
+
+    // Determine section
+    const schoolStandards = [
+      "4th Standard", "5th Standard", "6th Standard", 
+      "7th Standard", "8th Standard", "9th Standard", "10th Standard"
+    ];
+    const isSchool = schoolStandards.some(s => finalClass.includes(s));
+    const finalSection = isSchool ? "School Section" : "Competitive Exams";
+
+    // Determine total tuition fee
+    let totalFees = 15000;
+    if (finalClass.includes("MPSC")) totalFees = 22000;
+    else if (finalClass.includes("Navodaya")) totalFees = 12000;
+    else if (finalClass.includes("Scholarship")) totalFees = 8000;
+    else if (finalClass.includes("NMMS")) totalFees = 6000;
+    else if (finalClass.includes("Police")) totalFees = 18000;
+    else if (finalClass.includes("Talathi") || finalClass.includes("Saral")) totalFees = 14000;
+    else if (finalClass.includes("10th")) totalFees = 15000;
+    else totalFees = 10000;
+
+    const studentToInsert = {
+      id: crypto.randomUUID(),
+      loginCode: loginCode,
+      name: finalName,
+      phone: finalPhone,
+      parentName: finalParentName,
+      parentPhone: finalParentPhone,
+      email: finalEmail,
+      dob: finalDob,
+      gender: finalGender,
+      standard: finalClass,
+      section: finalSection,
+      batch: finalBatch,
+      address: finalAddress,
+      admissionDate: finalAdmissionDate,
+      profilePhoto: finalProfilePhoto,
+      isActive: true,
+      totalFees: totalFees,
+      paidFees: 0,
+      password: finalPassword,
+      attendance: {}
+    };
+
+    const savedStudent = await insertSupabaseStudent(studentToInsert);
+
+    // Sync back to local db cache
+    try {
+      const db = readDB();
+      db.students = db.students || [];
+      if (!db.students.some((s: any) => s.id === savedStudent.id)) {
+        db.students.push(savedStudent);
+        writeDB(db);
+      }
+    } catch (e) {}
+
+    res.status(201).json({
+      success: true,
+      user: {
+        role: "student",
+        name: savedStudent.name,
+        email: savedStudent.email,
+        studentId: savedStudent.id,
+        loginCode: savedStudent.loginCode,
+        isNewUser: true,
+        studentDetails: savedStudent
+      }
+    });
+
+  } catch (err: any) {
+    console.error("[STUDENT REGISTER ROUTE ERROR]", err);
+    res.status(500).json({ success: false, error: err.message || "Internal server error" });
+  }
+});
+
+// 2. POST /api/student/login - Student login with 7-digit login code
+app.post("/api/student/login", async (req, res) => {
+  try {
+    const { loginCode } = req.body || {};
+    if (!loginCode || loginCode.trim().length !== 7) {
+      return res.status(400).json({ success: false, error: "Please provide a valid 7-digit Login Code." });
+    }
+
+    const student = await getSupabaseStudentByCode(loginCode);
+    if (!student) {
+      return res.status(404).json({ success: false, error: "Invalid 7-digit student login code!" });
+    }
+
+    // Add to login history
+    try {
+      const db = readDB();
+      db.loginHistory = db.loginHistory || [];
+      db.loginHistory.unshift({
+        id: `LH-${Math.floor(1000 + Math.random() * 9000)}`,
+        studentId: student.id,
+        studentName: student.name,
+        role: "student",
+        timestamp: new Date().toISOString(),
+        method: "student_login_api"
+      });
+      writeDB(db);
+    } catch (e) {}
+
+    res.json({
+      success: true,
+      user: {
+        role: "student",
+        name: student.name,
+        email: student.email,
+        studentId: student.id,
+        loginCode: student.loginCode,
+        studentDetails: student
+      }
+    });
+
+  } catch (err: any) {
+    console.error("[STUDENT LOGIN ROUTE ERROR]", err);
+    res.status(500).json({ success: false, error: err.message || "Internal server error" });
+  }
+});
+
+// 3. POST /api/student/find-code - Find Student Login Code by phone
+app.post("/api/student/find-code", async (req, res) => {
+  try {
+    const { phone } = req.body || {};
+    if (!phone || !/^\d{10}$/.test(phone.trim())) {
+      return res.status(400).json({ success: false, error: "Please enter a valid 10-digit registered phone number." });
+    }
+
+    const student = await getSupabaseStudentByPhone(phone);
+    if (!student) {
+      return res.status(404).json({ success: false, error: "No student found with this mobile number." });
+    }
+
+    res.json({
+      success: true,
+      student: {
+        name: student.name,
+        student_name: student.name,
+        class: student.standard,
+        standard: student.standard,
+        loginCode: student.loginCode,
+        login_code: student.loginCode
+      }
+    });
+
+  } catch (err: any) {
+    console.error("[STUDENT FIND CODE ERROR]", err);
+    res.status(500).json({ success: false, error: err.message || "Internal server error" });
+  }
+});
+
+// 4. GET /api/student/profile - Get student profile details
+app.get("/api/student/profile", async (req, res) => {
+  try {
+    const loginCode = (req.query.loginCode || req.headers["x-login-code"]) as string;
+    if (!loginCode) {
+      return res.status(400).json({ error: "Missing x-login-code header or loginCode query parameter" });
+    }
+
+    const student = await getSupabaseStudentByCode(loginCode);
+    if (!student) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+
+    res.json(student);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to fetch student profile" });
+  }
+});
+
+// 5. PUT /api/student/profile - Update student profile details
+app.put("/api/student/profile", async (req, res) => {
+  try {
+    const loginCode = (req.query.loginCode || req.headers["x-login-code"]) as string;
+    if (!loginCode) {
+      return res.status(400).json({ error: "Missing x-login-code header or loginCode query parameter" });
+    }
+
+    const student = await getSupabaseStudentByCode(loginCode);
+    if (!student) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+
+    const updated = await updateSupabaseStudent(student.id, req.body);
+    
+    // Sync to local memory db cache as well
+    try {
+      const db = readDB();
+      db.students = db.students || [];
+      const index = db.students.findIndex((s: any) => s.id === student.id);
+      if (index !== -1) {
+        db.students[index] = { ...db.students[index], ...updated };
+        writeDB(db);
+      }
+    } catch (e) {}
+
+    res.json({ success: true, student: updated });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to update profile" });
+  }
+});
+
+// 6. GET /api/student/dashboard - Aggregate and return student dashboard data
+app.get("/api/student/dashboard", async (req, res) => {
+  try {
+    const loginCode = (req.query.loginCode || req.headers["x-login-code"]) as string;
+    if (!loginCode) {
+      return res.status(400).json({ error: "Missing x-login-code header or loginCode query parameter" });
+    }
+
+    const student = await getSupabaseStudentByCode(loginCode);
+    if (!student) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+
+    const db = readDB();
+
+    // Fetch related records
+    const attendanceLogs = (db.attendance || []).filter((a: any) => a.studentId === student.id);
+    const feeReceipts = (db.feeLogs || []).filter((f: any) => f.studentId === student.id);
+    const relevantAssignments = (db.assignments || []).filter((a: any) => a.standard === student.standard);
+    const liveClasses = (db.liveClasses || []).filter((l: any) => l.status === "active");
+
+    res.json({
+      student,
+      attendanceSummary: {
+        totalDays: attendanceLogs.length,
+        presentDays: attendanceLogs.filter((a: any) => a.status === "Present" || a.status === "Late").length,
+        absentDays: attendanceLogs.filter((a: any) => a.status === "Absent").length
+      },
+      feesSummary: {
+        totalFees: student.totalFees,
+        paidFees: student.paidFees,
+        pendingFees: Math.max(0, student.totalFees - student.paidFees)
+      },
+      assignmentsCount: relevantAssignments.length,
+      liveClassesCount: liveClasses.length
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to load student dashboard" });
+  }
+});
+
+// 7. GET /api/student/attendance - Get attendance logs
+app.get("/api/student/attendance", async (req, res) => {
+  try {
+    const loginCode = (req.query.loginCode || req.headers["x-login-code"]) as string;
+    if (!loginCode) {
+      return res.status(400).json({ error: "Missing x-login-code header or loginCode query parameter" });
+    }
+
+    const student = await getSupabaseStudentByCode(loginCode);
+    if (!student) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+
+    const db = readDB();
+    const list = (db.attendance || []).filter((a: any) => a.studentId === student.id);
+    res.json(list);
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to fetch student attendance logs" });
+  }
+});
+
+// 8. GET /api/student/fees - Get student fee status and logs
+app.get("/api/student/fees", async (req, res) => {
+  try {
+    const loginCode = (req.query.loginCode || req.headers["x-login-code"]) as string;
+    if (!loginCode) {
+      return res.status(400).json({ error: "Missing x-login-code header or loginCode query parameter" });
+    }
+
+    const student = await getSupabaseStudentByCode(loginCode);
+    if (!student) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+
+    const db = readDB();
+    const receipts = (db.feeLogs || []).filter((f: any) => f.studentId === student.id);
+    res.json({
+      totalFees: student.totalFees,
+      paidFees: student.paidFees,
+      pendingFees: Math.max(0, student.totalFees - student.paidFees),
+      receipts: receipts
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to fetch student fee details" });
+  }
+});
+
+// 9. GET /api/student/tests - Get quizzes
+app.get("/api/student/tests", async (req, res) => {
+  try {
+    const db = readDB();
+    res.json(db.quizzes || []);
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to fetch tests" });
+  }
+});
+
+// 10. GET /api/student/assignments - Get standard-matching assignments
+app.get("/api/student/assignments", async (req, res) => {
+  try {
+    const loginCode = (req.query.loginCode || req.headers["x-login-code"]) as string;
+    if (!loginCode) {
+      return res.status(400).json({ error: "Missing x-login-code header or loginCode query parameter" });
+    }
+
+    const student = await getSupabaseStudentByCode(loginCode);
+    if (!student) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+
+    const db = readDB();
+    const relevant = (db.assignments || []).filter((a: any) => a.standard === student.standard);
+    res.json(relevant);
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to fetch assignments" });
+  }
+});
+
+// 11. GET /api/student/live-classes - Get active/scheduled live classes
+app.get("/api/student/live-classes", async (req, res) => {
+  try {
+    const db = readDB();
+    res.json(db.liveClasses || []);
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to fetch live classes" });
+  }
+});
 
 
 // --- VITE DEV / PRODUCTION MIDDLEWARE ---
