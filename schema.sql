@@ -78,12 +78,16 @@ CREATE TABLE IF NOT EXISTS students (
 -- 4. Teachers Table
 CREATE TABLE IF NOT EXISTS teachers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    teacher_id VARCHAR(50) UNIQUE NOT NULL,
     name TEXT NOT NULL,
-    email TEXT UNIQUE,
-    phone TEXT,
-    specialization TEXT,
-    salary NUMERIC DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    designation TEXT,
+    subjects TEXT,
+    login_code TEXT NOT NULL, -- Hashed or plain text code
+    phone VARCHAR(20),
+    email VARCHAR(255) UNIQUE,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 5. Admins Table

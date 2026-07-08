@@ -488,6 +488,75 @@ async function deleteSupabaseStudent(id: string) {
   return true;
 }
 
+async function initializeSupabaseTeachers() {
+  const supabase = getSupabaseClient();
+  if (!supabase) return;
+  
+  try {
+    console.log("[SUPABASE] Checking and initializing teachers table...");
+    
+    // Check if we can select from teachers or if we need to insert the initial ones
+    const { data: existing, error } = await supabase
+      .from("teachers")
+      .select("*");
+      
+    if (error) {
+      console.warn("[SUPABASE] Notice on checking teachers table:", error.message);
+      return;
+    }
+    
+    const hasTeacher1 = existing?.some((t: any) => t.teacher_id === "teacher_001" || t.teacherId === "teacher_001");
+    const hasTeacher2 = existing?.some((t: any) => t.teacher_id === "teacher_002" || t.teacherId === "teacher_002");
+    
+    const hash1 = crypto.createHash("sha256").update("10985").digest("hex");
+    const hash2 = crypto.createHash("sha256").update("12515").digest("hex");
+
+    if (!hasTeacher1) {
+      const { error: insErr } = await supabase.from("teachers").insert({
+        teacher_id: "teacher_001",
+        name: "DNYANESHWAR SAKHARAM INGOLE",
+        designation: "Senior Faculty",
+        subjects: "Mathematics",
+        login_code: hash1,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+      if (insErr) {
+        console.error("[SUPABASE] Failed to insert Teacher 1 into Supabase:", insErr.message);
+      } else {
+        console.log("[SUPABASE] Successfully auto-inserted Teacher 1 (DNYANESHWAR SAKHARAM INGOLE).");
+      }
+    } else {
+      // Ensure the subjects are in sync with user request
+      await supabase.from("teachers").update({ subjects: "Mathematics" }).eq("teacher_id", "teacher_001");
+    }
+    
+    if (!hasTeacher2) {
+      const { error: insErr } = await supabase.from("teachers").insert({
+        teacher_id: "teacher_002",
+        name: "MADHAVI S. PAWAR",
+        designation: "Senior Faculty",
+        subjects: "Science",
+        login_code: hash2,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+      if (insErr) {
+        console.error("[SUPABASE] Failed to insert Teacher 2 into Supabase:", insErr.message);
+      } else {
+        console.log("[SUPABASE] Successfully auto-inserted Teacher 2 (MADHAVI S. PAWAR).");
+      }
+    } else {
+      // Ensure the subjects are in sync with user request
+      await supabase.from("teachers").update({ subjects: "Science" }).eq("teacher_id", "teacher_002");
+    }
+  } catch (err: any) {
+    console.error("[SUPABASE] Error initializing teachers table:", err.message || err);
+  }
+}
+
 const KEYS_TO_SYNC = [
   "students",
   "feeLogs",
@@ -845,16 +914,95 @@ app.post("/api/auth/login", async (req, res) => {
     }
 
     if (role === "teacher") {
-      if (passcode === "10985") {
+      const TEACHER_1 = {
+        teacherId: "teacher_001",
+        name: "DNYANESHWAR SAKHARAM INGOLE",
+        subjects: ["Mathematics"],
+        designation: "Senior Faculty",
+        loginCode: "10985"
+      };
+
+      const TEACHER_2 = {
+        teacherId: "teacher_002",
+        name: "MADHAVI S. PAWAR",
+        subjects: ["Science"],
+        designation: "Senior Faculty",
+        loginCode: "12515"
+      };
+
+      let authenticatedTeacher = null;
+
+      // Primary check against defined backend credentials
+      if (passcode === TEACHER_1.loginCode) {
+        authenticatedTeacher = TEACHER_1;
+      } else if (passcode === TEACHER_2.loginCode) {
+        authenticatedTeacher = TEACHER_2;
+      }
+
+      // Query Supabase teachers table as secondary verification
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        try {
+          const enteredHash = crypto.createHash("sha256").update(passcode).digest("hex");
+          
+          // Match hashed code or raw code
+          const { data, error } = await supabase
+            .from("teachers")
+            .select("*")
+            .or(`login_code.eq.${enteredHash},login_code.eq.${passcode}`);
+            
+          if (!error && data && data.length > 0) {
+            const row = data[0];
+            let subjectsArray: string[] = [];
+            if (row.subjects) {
+              if (Array.isArray(row.subjects)) {
+                subjectsArray = row.subjects;
+              } else {
+                subjectsArray = row.subjects.split(",").map((s: string) => s.trim());
+              }
+            }
+            authenticatedTeacher = {
+              teacherId: row.teacher_id || row.id || "teacher_001",
+              name: row.name,
+              subjects: subjectsArray,
+              designation: row.designation || "Senior Faculty"
+            };
+          }
+        } catch (supabaseErr) {
+          console.error("[SUPABASE] Error checking teacher login in remote DB:", supabaseErr);
+        }
+      }
+
+      if (authenticatedTeacher) {
+        // Log in history
+        try {
+          db.loginHistory = db.loginHistory || [];
+          db.loginHistory.unshift({
+            id: `LH-${Math.floor(1000 + Math.random() * 9000)}`,
+            teacherId: authenticatedTeacher.teacherId,
+            studentName: authenticatedTeacher.name,
+            role: "teacher",
+            timestamp: new Date().toISOString(),
+            method: "teacher_login_api"
+          });
+          writeDB(db);
+        } catch (e) {}
+
         return res.json({
           success: true,
           user: {
             role: "teacher",
-            name: "Expert Faculty"
+            teacherId: authenticatedTeacher.teacherId,
+            name: authenticatedTeacher.name,
+            subjects: authenticatedTeacher.subjects,
+            designation: authenticatedTeacher.designation
           }
         });
       } else {
-        return res.json({ success: false, error: "चुकीचा पासवर्ड! (Invalid Teacher Passcode)" });
+        return res.json({ 
+          success: false, 
+          error: "Invalid Teacher Login Code. Please try again." 
+        });
       }
     }
 
@@ -2373,6 +2521,7 @@ async function startServer() {
         console.log("[STARTUP] Triggering cloud database check and restore...");
         await initialCloudRestore();
         await restoreQrFromCloud();
+        await initializeSupabaseTeachers();
       } catch (err: any) {
         console.error("[STARTUP] Error during deferred cloud restoration:", err.message || err);
       }
