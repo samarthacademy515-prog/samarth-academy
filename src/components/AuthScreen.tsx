@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Lock, Unlock, ShieldCheck, BookOpen, GraduationCap, Users, 
-  Mail, Chrome, ArrowRight, CheckCircle2, Sparkles, 
+  Mail, ArrowRight, CheckCircle2, Sparkles, 
   MessageCircle, Info, Search, HelpCircle, Phone, Globe, Trash2, Plus, ChevronRight,
   MapPin, Calendar, User
 } from "lucide-react";
@@ -40,44 +40,6 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
   // New User States
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isGoogleSigning, setIsGoogleSigning] = useState(false);
-  const [showGoogleChooser, setShowGoogleChooser] = useState(false);
-  const [googleEmail, setGoogleEmail] = useState("");
-  const [showAddAccountForm, setShowAddAccountForm] = useState(false);
-
-  // Google accounts saved on this device to protect privacy
-  const [deviceAccounts, setDeviceAccounts] = useState<{name: string, email: string}[]>(() => {
-    try {
-      const saved = localStorage.getItem("samarth_academy_device_accounts");
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
-    }
-  });
-
-  const saveAccountToDevice = (name: string, email: string) => {
-    try {
-      const saved = localStorage.getItem("samarth_academy_device_accounts");
-      const list = saved ? JSON.parse(saved) : [];
-      if (!list.some((acc: any) => acc.email.toLowerCase() === email.toLowerCase())) {
-        list.push({ name, email });
-        localStorage.setItem("samarth_academy_device_accounts", JSON.stringify(list));
-        setDeviceAccounts(list);
-      }
-    } catch (e) {
-      console.warn("localStorage error:", e);
-    }
-  };
-
-  const removeDeviceAccount = (email: string) => {
-    try {
-      const filtered = deviceAccounts.filter((acc) => acc.email.toLowerCase() !== email.toLowerCase());
-      localStorage.setItem("samarth_academy_device_accounts", JSON.stringify(filtered));
-      setDeviceAccounts(filtered);
-    } catch (e) {
-      console.warn("localStorage error:", e);
-    }
-  };
 
   // General States
   const [loading, setLoading] = useState(false);
@@ -167,9 +129,16 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
 
     try {
       const payload: any = { role: selectedRole };
-      if (selectedRole === "student" || selectedRole === "parent") {
+      if (selectedRole === "student") {
+        const cleaned = loginCode.trim();
+        // Validation: Exactly 7 digits, only numbers, no alphabets/spaces/symbols
+        if (!/^\d{7}$/.test(cleaned)) {
+          throw new Error("Invalid 7 Digit Login Code");
+        }
+        payload.loginCode = cleaned;
+      } else if (selectedRole === "parent") {
         if (!loginCode.trim()) {
-          throw new Error(selectedRole === "student" ? t("auth.enter_code_student") : t("auth.enter_code_parent"));
+          throw new Error(t("auth.enter_code_parent"));
         }
         payload.loginCode = loginCode.trim();
       } else {
@@ -201,11 +170,17 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
       }
 
       if (!response.ok || data.success === false) {
+        if (selectedRole === "student") {
+          throw new Error("Invalid 7 Digit Login Code");
+        }
         throw new Error(data.error || t("auth.login_failed"));
       }
 
       const welcomeText = `${t("auth.login_success_welcome")}${data.user.name}`;
       setSuccessMsg(welcomeText);
+
+      // Save user to localStorage (as requested) and trigger onLoginSuccess
+      localStorage.setItem("user", JSON.stringify(data.user));
 
       // Auto say credentials and welcome message out loud
       if ("speechSynthesis" in window) {
@@ -349,75 +324,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
     }
   };
 
-  const handleGoogleSignIn = () => {
-    setIsGoogleSigning(true);
-    setErrorMsg(null);
-    setTimeout(() => {
-      setShowGoogleChooser(true);
-      setShowAddAccountForm(deviceAccounts.length === 0);
-    }, 1000);
-  };
 
-  const selectGoogleAccount = async (gmail: string) => {
-    setShowGoogleChooser(false);
-    setLoading(true);
-    setErrorMsg(null);
-    
-    try {
-      const response = await fetch(`${API}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          loginType: "google",
-          email: gmail
-        })
-      });
-
-      let data: any = {};
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        data = await response.json();
-      } else {
-        const text = await response.text();
-        throw new Error("Invalid server response format.");
-      }
-
-      if (data.success === false) {
-        throw new Error(data.error || "Google login failed on backend.");
-      }
-
-      const confirmMsg = `Google Login Success! Student ID: ${data.user.studentId}, Login Code: ${data.user.loginCode}`;
-      setSuccessMsg(confirmMsg);
-
-      // Auto say permanent registration details and credentials
-      if ("speechSynthesis" in window) {
-        try {
-          window.speechSynthesis.cancel();
-          const utterance = new SpeechSynthesisUtterance(
-            `Welcome to Samarth Academy, ${data.user.name}! Your permanent student ID is ${data.user.studentId}, and your seven digit login code is ${data.user.loginCode}. It is saved permanently. Please write it down.`
-          );
-          utterance.rate = 0.9;
-          window.speechSynthesis.speak(utterance);
-        } catch (speechErr) {
-          console.warn("Speech synthesis error:", speechErr);
-        }
-      }
-
-      if (data.user && data.user.email) {
-        saveAccountToDevice(data.user.name, data.user.email);
-      }
-
-      setTimeout(() => {
-        onLoginSuccess(data.user);
-        setIsGoogleSigning(false);
-      }, 3500);
-    } catch (err: any) {
-      setErrorMsg(err.message || "Google लॉगिन अयशस्वी.");
-      setIsGoogleSigning(false);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const searchStudentCode = async () => {
     if (!searchPhone.trim()) return;
@@ -526,7 +433,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
         </AnimatePresence>
 
         {/* Login Type Tabs (Existing vs. New User) */}
-        {!showGoogleChooser && !showForgotView && (
+        {!showForgotView && (
           <div className="grid grid-cols-2 border-b border-slate-800 bg-slate-950/50">
             <button
               onClick={() => { setActiveTab("existing"); setErrorMsg(null); }}
@@ -709,139 +616,6 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                   </div>
                 )}
               </motion.div>
-            ) : showGoogleChooser ? (
-              <motion.div
-                key="google-chooser-view"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white text-slate-900 rounded-2xl p-5 border border-slate-200 shadow-xl space-y-3.5"
-              >
-                <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                  <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider flex items-center gap-1">
-                    <Chrome className="w-3.5 h-3.5 text-red-500" />
-                    {language === "marathi" ? "Google द्वारे सुरक्षित लॉगिन" : language === "hindi" ? "Google द्वारा सुरक्षित लॉगिन" : "Secure Login via Google"}
-                  </span>
-                  <button 
-                    onClick={() => { setShowGoogleChooser(false); setIsGoogleSigning(false); }} 
-                    className="text-slate-400 hover:text-slate-900 font-bold text-sm cursor-pointer"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                {!showAddAccountForm && deviceAccounts.length > 0 ? (
-                  <div className="space-y-3">
-                    <p className="text-[11px] text-slate-500 leading-normal font-medium">
-                      {language === "marathi" 
-                        ? "तुमच्या डिव्हाइसवर जोडलेली खाती निवडा:" 
-                        : language === "hindi" 
-                        ? "अपने डिवाइस पर जुड़े खाते चुनें:" 
-                        : "Select an account active on this device:"}
-                    </p>
-
-                    <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                      {deviceAccounts.map((acc, index) => {
-                        const initial = acc.name ? acc.name.charAt(0).toUpperCase() : "U";
-                        return (
-                          <div
-                            key={acc.email}
-                            onClick={() => selectGoogleAccount(acc.email)}
-                            className="w-full text-left p-2.5 hover:bg-slate-50 rounded-xl border border-slate-100 hover:border-slate-300 flex items-center justify-between font-semibold text-slate-850 cursor-pointer transition-all group"
-                          >
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center font-bold text-xs uppercase group-hover:bg-amber-500 group-hover:text-white group-hover:border-transparent transition-colors">
-                                {initial}
-                              </div>
-                              <div className="truncate max-w-[160px] sm:max-w-[200px]">
-                                <p className="leading-tight text-xs text-slate-800">{acc.name}</p>
-                                <p className="text-[10px] text-slate-400 font-normal truncate">{acc.email}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-amber-500 transition-colors" />
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (confirm(language === "marathi" ? "हे खाते या डिव्हाइसवरून काढायचे?" : "Remove this account from this device?")) {
-                                    removeDeviceAccount(acc.email);
-                                  }
-                                }}
-                                className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all cursor-pointer"
-                                title="Remove from device"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setGoogleEmail("");
-                        setShowAddAccountForm(true);
-                      }}
-                      className="w-full text-center py-2 hover:bg-slate-50 rounded-xl text-amber-600 font-bold text-[11px] border border-dashed border-amber-200 transition-colors flex items-center justify-center gap-1 cursor-pointer mt-1"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      {language === "marathi" ? "दुसरे खाते वापरा" : language === "hindi" ? "दूसरा खाता जोड़ें" : "Use another account"}
-                    </button>
-                  </div>
-                ) : (
-                  <form 
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      if (googleEmail.trim()) {
-                        selectGoogleAccount(googleEmail.trim());
-                      }
-                    }}
-                    className="space-y-3.5 text-xs"
-                  >
-                    <p className="text-[11px] text-slate-500 leading-normal">
-                      {language === "marathi" 
-                        ? "आपल्या फोन/डिव्हाइसवर सुरू असलेले Google (Gmail) खाते येथे टाका:" 
-                        : language === "hindi" 
-                        ? "अपने फोन/डिवाइस पर सक्रिय Google (Gmail) खाता यहाँ दर्ज करें:" 
-                        : "Enter the Google (Gmail) account active on your phone/device to proceed:"}
-                    </p>
-                    
-                    <div className="space-y-1">
-                      <input
-                        type="email"
-                        required
-                        placeholder="yourname@gmail.com"
-                        value={googleEmail}
-                        onChange={(e) => setGoogleEmail(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold focus:outline-none focus:border-amber-500 focus:bg-white transition-all placeholder-slate-400 font-mono"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-2 pt-1">
-                      <button
-                        type="submit"
-                        className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2 px-4 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs"
-                      >
-                        <Unlock className="w-3.5 h-3.5 text-amber-400" />
-                        {language === "marathi" ? "लॉगिन करा" : language === "hindi" ? "लॉगिन करें" : "Sign In & Continue"}
-                      </button>
-
-                      {deviceAccounts.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => setShowAddAccountForm(false)}
-                          className="text-center text-[10px] text-slate-500 hover:text-slate-800 underline font-semibold py-1 cursor-pointer transition-all"
-                        >
-                          {language === "marathi" ? "← जतन केलेल्या खात्यांवर परत जा" : language === "hindi" ? "← सहेजे गए खातों पर वापस जाएं" : "← Back to saved accounts on this device"}
-                        </button>
-                      )}
-                    </div>
-                  </form>
-                )}
-              </motion.div>
             ) : activeTab === "existing" ? (
               <motion.div
                 key="existing-form"
@@ -904,13 +678,11 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
 
                 {/* Form element */}
                 <form onSubmit={handleExistingLogin} className="space-y-4">
-                  {(selectedRole === "student" || selectedRole === "parent") ? (
-                    <div>
-                      <div className="flex justify-between items-center mb-1.5">
+                  {selectedRole === "student" ? (
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
                         <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                          {selectedRole === "student" 
-                            ? t("auth.student_code_label") 
-                            : t("auth.parent_code_label")}
+                          {t("auth.student_code_label")}
                         </label>
                         <button
                           type="button"
@@ -924,24 +696,73 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                       <input
                         type="text"
                         required
-                        maxLength={selectedRole === "student" ? 7 : 10}
-                        placeholder={selectedRole === "student" ? t("auth.student_placeholder") : t("auth.parent_placeholder")}
+                        maxLength={7}
+                        placeholder="Enter your 7 Digit Student Login Code"
+                        value={loginCode}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9]/g, "");
+                          setLoginCode(val);
+                        }}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-700 font-mono text-center tracking-widest focus:outline-none focus:border-amber-500 transition-colors"
+                      />
+
+                      <div className="flex justify-end mt-2">
+                        <button
+                          type="button"
+                          onClick={() => { setShowForgotView(true); setErrorMsg(null); setForgotResult(null); setForgotPhone(""); }}
+                          className="text-[11px] text-amber-500 hover:text-amber-400 font-bold hover:underline transition-all cursor-pointer flex items-center gap-1"
+                        >
+                          <HelpCircle className="w-3.5 h-3.5" />
+                          {language === "marathi" ? "७-अंकी लॉगिन कोड विसरलात?" : language === "hindi" ? "लॉगिन कोड भूल गए?" : "Forgot Student Login Code?"}
+                        </button>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full h-[52px] rounded-[16px] bg-gradient-to-r from-[#F59E0B] to-[#EA580C] text-white font-bold shadow-lg hover:from-[#EA580C] hover:to-[#d97706] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-sm uppercase tracking-wider"
+                      >
+                        {loading ? (
+                          <>
+                            <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
+                            <span>Logging In...</span>
+                          </>
+                        ) : (
+                          <span>LOGIN</span>
+                        )}
+                      </button>
+                    </div>
+                  ) : selectedRole === "parent" ? (
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center mb-1.5">
+                        <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                          {t("auth.parent_code_label")}
+                        </label>
+                      </div>
+
+                      <input
+                        type="text"
+                        required
+                        maxLength={10}
+                        placeholder={t("auth.parent_placeholder")}
                         value={loginCode}
                         onChange={(e) => setLoginCode(e.target.value.replace(/[^0-9]/g, ""))}
                         className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-700 font-mono text-center tracking-widest focus:outline-none focus:border-amber-500 transition-colors"
                       />
-                      {selectedRole === "student" && (
-                        <div className="flex justify-end mt-2">
-                          <button
-                            type="button"
-                            onClick={() => { setShowForgotView(true); setErrorMsg(null); setForgotResult(null); setForgotPhone(""); }}
-                            className="text-[11px] text-amber-500 hover:text-amber-400 font-bold hover:underline transition-all cursor-pointer flex items-center gap-1"
-                          >
-                            <HelpCircle className="w-3.5 h-3.5" />
-                            {language === "marathi" ? "७-अंकी लॉगिन कोड विसरलात?" : language === "hindi" ? "लॉगिन कोड भूल गए?" : "Forgot Student Login Code?"}
-                          </button>
-                        </div>
-                      )}
+
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-gradient-to-r from-red-600 to-amber-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg hover:from-red-500 hover:to-amber-500 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-xs sm:text-sm uppercase tracking-wider"
+                      >
+                        {loading ? (
+                          <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                        ) : (
+                          <>
+                            <Unlock className="w-4 h-4" /> {t("auth.login_btn")} <ArrowRight className="w-4 h-4" />
+                          </>
+                        )}
+                      </button>
                     </div>
                   ) : selectedRole === "admin" ? (
                     <div className="space-y-4">
@@ -1123,34 +944,7 @@ export default function AuthScreen({ onLoginSuccess }: AuthScreenProps) {
                     </div>
                   )}
 
-                  {(selectedRole === "student" || selectedRole === "parent") && (
-                    <>
-                      {/* Separator Line */}
-                      <div className="relative flex py-1 items-center">
-                        <div className="flex-grow border-t border-slate-850"></div>
-                        <span className="flex-shrink mx-3 text-slate-500 text-[10px] uppercase font-black tracking-wider">
-                          {language === "marathi" ? "किंवा" : language === "hindi" ? "या" : "OR"}
-                        </span>
-                        <div className="flex-grow border-t border-slate-850"></div>
-                      </div>
 
-                      {/* Google Sign In Button */}
-                      <button
-                        type="button"
-                        onClick={handleGoogleSignIn}
-                        disabled={isGoogleSigning}
-                        className="w-full bg-white hover:bg-slate-50 text-slate-900 font-bold py-2.5 px-4 rounded-xl border border-slate-200 transition-all flex items-center justify-center gap-2.5 shadow-sm hover:shadow cursor-pointer text-xs sm:text-sm"
-                      >
-                        {isGoogleSigning ? (
-                          <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-900"></span>
-                        ) : (
-                          <>
-                            <Chrome className="w-4 h-4 text-red-500" /> {t("auth.google_btn")}
-                          </>
-                        )}
-                      </button>
-                    </>
-                  )}
                 </form>
 
                 {/* Demo Directory Finder Overlay */}
